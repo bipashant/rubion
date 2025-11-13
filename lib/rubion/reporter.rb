@@ -200,7 +200,7 @@ module Rubion
         "🔴 #{severity}"
       when 'high'
         "🟠 #{severity}"
-      when 'medium'
+      when 'medium', 'moderate'
         "🟡 #{severity}"
       when 'low'
         "🟢 #{severity}"
