@@ -149,7 +149,9 @@ module Rubion
           versions << {
             gem: $1.strip,
             current: $3.strip,
-            latest: $2.strip
+            current_date: 'N/A',  # Would need additional gem info API call
+            latest: $2.strip,
+            latest_date: 'N/A'    # Would need additional gem info API call
           }
         end
       end
@@ -197,7 +199,9 @@ module Rubion
           versions << {
             package: name,
             current: info['current'] || 'unknown',
-            latest: info['latest'] || 'unknown'
+            current_date: 'N/A',  # Would need additional npm info API call
+            latest: info['latest'] || 'unknown',
+            latest_date: 'N/A'    # Would need additional npm info API call
           }
         end
       end
@@ -213,41 +217,47 @@ module Rubion
     def dummy_gem_vulnerabilities
       [
         {
+          gem: 'rails',
+          version: '7.2.2.2',
+          severity: 'Critical',
+          advisory: 'CVE-2024-12345',
+          title: 'ActiveRecord attack'
+        },
+        {
           gem: 'rack',
-          version: '2.0.8',
+          version: '3.1.18',
           severity: 'High',
-          advisory: 'CVE-2022-44570',
-          title: 'Denial of Service Vulnerability in Rack Multipart Parsing'
+          advisory: 'CVE-2024-54321',
+          title: 'Man in middle attack'
         },
         {
           gem: 'nokogiri',
           version: '1.10.4',
-          severity: 'Critical',
+          severity: 'Medium',
           advisory: 'CVE-2021-30560',
           title: 'Update bundled libxml2 to v2.9.12'
-        },
-        {
-          gem: 'rails',
-          version: '5.2.3',
-          severity: 'Medium',
-          advisory: 'CVE-2022-32224',
-          title: 'Possible RCE escalation bug with Serialized Columns'
         }
       ]
     end
 
     def dummy_gem_versions
       [
-        { gem: 'puma', current: '4.3.8', latest: '6.4.0' },
-        { gem: 'devise', current: '4.7.3', latest: '4.9.3' },
-        { gem: 'rspec-rails', current: '4.0.2', latest: '6.1.0' },
-        { gem: 'rubocop', current: '0.93.1', latest: '1.58.0' },
-        { gem: 'sidekiq', current: '6.1.0', latest: '7.2.0' }
+        { gem: 'sidekiq', current: '7.3.0', current_date: '3/5/2024', latest: '8.1.0', latest_date: '11/11/2024' },
+        { gem: 'fastimage', current: '2.2.7', current_date: '2/2/2025', latest: '2.3.2', latest_date: '9/9/2025' },
+        { gem: 'puma', current: '4.3.8', current_date: '1/15/2024', latest: '6.4.0', latest_date: '10/20/2024' },
+        { gem: 'devise', current: '4.7.3', current_date: '3/10/2024', latest: '4.9.3', latest_date: '8/15/2024' },
+        { gem: 'rspec-rails', current: '4.0.2', current_date: '2/5/2024', latest: '6.1.0', latest_date: '12/1/2024' }
       ]
     end
 
     def dummy_npm_vulnerabilities
       [
+        {
+          package: 'moment',
+          version: '1.2.3',
+          severity: 'high',
+          title: 'Wrong timezone date'
+        },
         {
           package: 'axios',
           version: '0.21.1',
@@ -259,23 +269,17 @@ module Rubion
           version: '1.2.5',
           severity: 'critical',
           title: 'Prototype Pollution in minimist'
-        },
-        {
-          package: 'lodash',
-          version: '4.17.19',
-          severity: 'high',
-          title: 'Prototype Pollution in lodash'
         }
       ]
     end
 
     def dummy_npm_versions
       [
-        { package: 'vue', current: '2.6.12', latest: '3.4.3' },
-        { package: 'webpack', current: '4.46.0', latest: '5.89.0' },
-        { package: 'eslint', current: '7.32.0', latest: '8.56.0' },
-        { package: '@babel/core', current: '7.15.0', latest: '7.23.6' },
-        { package: 'typescript', current: '4.3.5', latest: '5.3.3' }
+        { package: 'jquery', current: '3.7.1', current_date: '4/5/2024', latest: '3.9.1', latest_date: '10/11/2025' },
+        { package: 'vue', current: '2.6.12', current_date: '5/15/2024', latest: '3.4.3', latest_date: '11/20/2024' },
+        { package: 'webpack', current: '4.46.0', current_date: '3/8/2024', latest: '5.89.0', latest_date: '9/25/2024' },
+        { package: 'eslint', current: '7.32.0', current_date: '2/12/2024', latest: '8.56.0', latest_date: '12/5/2024' },
+        { package: '@babel/core', current: '7.15.0', current_date: '4/20/2024', latest: '7.23.6', latest_date: '10/30/2024' }
       ]
     end
   end
