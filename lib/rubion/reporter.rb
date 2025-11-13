@@ -65,8 +65,8 @@ module Rubion
       # Simplified header
       puts "\n"
     end
-      puts "Gem Vulnerabilities:\n\n"
-      
+
+    def _print_gem_vulnerabilities
       if @result.gem_vulnerabilities.empty?
         puts "  ✅ No vulnerabilities found!\n\n"
         return
