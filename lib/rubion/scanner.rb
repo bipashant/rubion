@@ -2,6 +2,9 @@
 
 require 'json'
 require 'open3'
+require 'net/http'
+require 'uri'
+require 'date'
 
 module Rubion
   class Scanner
@@ -146,12 +149,20 @@ module Rubion
         
         # Parse format: gem_name (newest version, installed version, requested version)
         if line =~ /^(.+?)\s+\(newest\s+(.+?),\s+installed\s+(.+?)(?:,|\))/
+          gem_name = $1.strip
+          current_version = $3.strip
+          latest_version = $2.strip
+          
+          # Fetch release dates from RubyGems API
+          current_date = fetch_gem_release_date(gem_name, current_version)
+          latest_date = fetch_gem_release_date(gem_name, latest_version)
+          
           versions << {
-            gem: $1.strip,
-            current: $3.strip,
-            current_date: 'N/A',  # Would need additional gem info API call
-            latest: $2.strip,
-            latest_date: 'N/A'    # Would need additional gem info API call
+            gem: gem_name,
+            current: current_version,
+            current_date: current_date,
+            latest: latest_version,
+            latest_date: latest_date
           }
         end
       end
@@ -196,12 +207,19 @@ module Rubion
         data.each do |name, info|
           next unless info.is_a?(Hash)
           
+          current_version = info['current'] || 'unknown'
+          latest_version = info['latest'] || 'unknown'
+          
+          # Fetch release dates from NPM registry
+          current_date = fetch_npm_release_date(name, current_version)
+          latest_date = fetch_npm_release_date(name, latest_version)
+          
           versions << {
             package: name,
-            current: info['current'] || 'unknown',
-            current_date: 'N/A',  # Would need additional npm info API call
-            latest: info['latest'] || 'unknown',
-            latest_date: 'N/A'    # Would need additional npm info API call
+            current: current_version,
+            current_date: current_date,
+            latest: latest_version,
+            latest_date: latest_date
           }
         end
       end
@@ -281,6 +299,71 @@ module Rubion
         { package: 'eslint', current: '7.32.0', current_date: '2/12/2024', latest: '8.56.0', latest_date: '12/5/2024' },
         { package: '@babel/core', current: '7.15.0', current_date: '4/20/2024', latest: '7.23.6', latest_date: '10/30/2024' }
       ]
+    end
+
+    # Fetch gem release date from RubyGems API
+    def fetch_gem_release_date(gem_name, version)
+      return 'N/A' if version == 'unknown' || gem_name.nil?
+      
+      uri = URI("https://rubygems.org/api/v1/versions/#{gem_name}.json")
+      
+      # Set timeout to avoid hanging
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Skip SSL verification
+      http.open_timeout = 2
+      http.read_timeout = 3
+      
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+      
+      return 'N/A' unless response.is_a?(Net::HTTPSuccess)
+      
+      versions = JSON.parse(response.body)
+      version_info = versions.find { |v| v['number'] == version }
+      
+      if version_info && version_info['created_at']
+        date = DateTime.parse(version_info['created_at'])
+        date.strftime('%-m/%-d/%Y')  # Format: 3/5/2024
+      else
+        'N/A'
+      end
+    rescue => e
+      puts "  Debug: Error fetching date for #{gem_name} #{version}: #{e.message}" if ENV['DEBUG']
+      'N/A'
+    end
+
+    # Fetch npm package release date from NPM registry
+    def fetch_npm_release_date(package_name, version)
+      return 'N/A' if version == 'unknown' || package_name.nil?
+      
+      # Encode package name for URL (handles scoped packages like @babel/core)
+      encoded_name = URI.encode_www_form_component(package_name)
+      uri = URI("https://registry.npmjs.org/#{encoded_name}")
+      
+      # Set timeout to avoid hanging
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Skip SSL verification
+      http.open_timeout = 2
+      http.read_timeout = 3
+      
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+      
+      return 'N/A' unless response.is_a?(Net::HTTPSuccess)
+      
+      data = JSON.parse(response.body)
+      
+      if data['time'] && data['time'][version]
+        date = DateTime.parse(data['time'][version])
+        date.strftime('%-m/%-d/%Y')  # Format: 3/5/2024
+      else
+        'N/A'
+      end
+    rescue => e
+      puts "  Debug: Error fetching date for #{package_name} #{version}: #{e.message}" if ENV['DEBUG']
+      'N/A'
     end
   end
 end
