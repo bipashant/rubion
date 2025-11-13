@@ -189,6 +189,8 @@ module Rubion
         "🟡 #{severity_str}"
       when 'low'
         "🟢 #{severity_str}"
+      when 'unknown'
+        "⚪ #{severity_str}"
       else
         severity_str
       end

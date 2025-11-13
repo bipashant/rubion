@@ -159,9 +159,7 @@ module Rubion
           # Fallback for older bundle-audit versions
           current_gem[:advisory] = $1.strip
         elsif line =~ /^Criticality: (.+)/ && current_gem
-          severity = $1.strip
-          # Map "Unknown" to a more standard severity
-          current_gem[:severity] = (severity == "Unknown" ? "Medium" : severity)
+          current_gem[:severity] = $1.strip
         elsif line =~ /^Title: (.+)/ && current_gem
           current_gem[:title] = $1.strip
           # Only add if we have at least name, version, and title
