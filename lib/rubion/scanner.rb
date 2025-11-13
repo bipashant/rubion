@@ -160,32 +160,52 @@ module Rubion
     def parse_npm_audit_output(data)
       vulnerabilities = []
       
-      if data['vulnerabilities']
+      if data['vulnerabilities'] && data['vulnerabilities'].is_a?(Hash)
         data['vulnerabilities'].each do |name, info|
+          next unless info.is_a?(Hash)
+          
+          # Extract title from via array
+          title = 'Vulnerability detected'
+          if info['via'].is_a?(Array) && info['via'].first.is_a?(Hash)
+            title = info['via'].first['title'] || title
+          elsif info['via'].is_a?(String)
+            title = info['via']
+          end
+          
           vulnerabilities << {
             package: name,
-            version: info['range'] || 'unknown',
+            version: info['range'] || info['version'] || 'unknown',
             severity: info['severity'] || 'unknown',
-            title: info['via']&.first&.dig('title') || 'Vulnerability detected'
+            title: title
           }
         end
       end
       
       @result.package_vulnerabilities = vulnerabilities.empty? ? dummy_npm_vulnerabilities : vulnerabilities
+    rescue => e
+      puts "  ⚠️  Error parsing npm audit data: #{e.message}"
+      @result.package_vulnerabilities = dummy_npm_vulnerabilities
     end
 
     def parse_npm_outdated_output(data)
       versions = []
       
-      data.each do |name, info|
-        versions << {
-          package: name,
-          current: info['current'] || 'unknown',
-          latest: info['latest'] || 'unknown'
-        }
+      if data.is_a?(Hash)
+        data.each do |name, info|
+          next unless info.is_a?(Hash)
+          
+          versions << {
+            package: name,
+            current: info['current'] || 'unknown',
+            latest: info['latest'] || 'unknown'
+          }
+        end
       end
       
       @result.package_versions = versions.empty? ? dummy_npm_versions : versions
+    rescue => e
+      puts "  ⚠️  Error parsing npm outdated data: #{e.message}"
+      @result.package_versions = dummy_npm_versions
     end
 
     # Dummy data for demonstration
