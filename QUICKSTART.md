@@ -35,16 +35,35 @@ cd /path/to/your/project
 rubion scan
 ```
 
-### 2. View Help
+### 2. Scan Options
+
+```bash
+# Scan only Ruby gems
+rubion scan --gems-only
+# or
+rubion scan -g
+
+# Scan only NPM packages
+rubion scan --packages-only
+# or
+rubion scan -p
+
+# Scan both (default)
+rubion scan
+```
+
+### 3. View Help
 
 ```bash
 rubion help
 ```
 
-### 3. Check Version
+### 4. Check Version
 
 ```bash
 rubion version
+# or
+rubion -v
 ```
 
 ## Example Output
@@ -54,24 +73,42 @@ When you run `rubion scan`, you'll see a comprehensive report like this:
 ```
 🔍 Scanning project at: /your/project
 
-📦 Checking Ruby gems...
-📦 Checking NPM packages...
+📦 Checking Ruby gems... 139/139 ✓
 
-================================================================================
-  🔒 RUBION SECURITY & VERSION SCAN REPORT
-================================================================================
+Gem Vulnerabilities:
 
-📛 GEM VULNERABILITIES
++----------+--------+---------+------------------------------------------+
+| Level    | Name   | Version | Vulnerability                            |
++----------+--------+---------+------------------------------------------+
+| 🔴 Critical | rexml | 3.4.1   | REXML has DoS condition when parsing... |
+| 🟠 High  | rack   | 2.0.8   | Denial of Service vulnerability         |
++----------+--------+---------+------------------------------------------+
 
-+------------------------------------------------------------------------+
-|                       Ruby Gem Vulnerabilities                         |
-+----------+--------+----------+--------------+-------------------------+
-| Gem      | Version| Severity | Advisory     | Title                   |
-+----------+--------+----------+--------------+-------------------------+
-| rack     | 2.0.8  | 🔴 High  | CVE-2022-... | Denial of Service...    |
-+----------+--------+----------+--------------+-------------------------+
+Gem Versions:
 
-📊 SUMMARY: 3 vulnerabilities found, 5 packages outdated
++----------+---------+-----------+---------+-----------+-----------+----------+
+| Name     | Current | Date      | Latest  | Date      | Behind By | Versions |
++----------+---------+-----------+---------+-----------+-----------+----------+
+| sidekiq  | 7.30    | 3/5/2024  | 8.1     | 11/11/2025| 1 year    | 15       |
++----------+---------+-----------+---------+-----------+-----------+----------+
+
+📦 Checking NPM packages... 45/45 ✓
+
+Package Vulnerabilities:
+
++----------+--------+---------+------------------------------------------+
+| Level    | Name   | Version | Vulnerability                            |
++----------+--------+---------+------------------------------------------+
+| 🟠 High  | moment | 1.2.3   | Wrong timezone date calculation         |
++----------+--------+---------+------------------------------------------+
+
+Package Versions:
+
++----------+---------+-----------+---------+-----------+-----------+----------+
+| Name     | Current | Date      | Latest  | Date      | Behind By | Versions |
++----------+---------+-----------+---------+-----------+-----------+----------+
+| jquery   | 3.7.1   | 4/5/2024  | 3.9.1   | 10/11/2025| 1 year    | 8        |
++----------+---------+-----------+---------+-----------+-----------+----------+
 ```
 
 ## Testing in Development
@@ -178,6 +215,7 @@ gem install bundler-audit
 ## Next Steps
 
 - Read the full [README.md](README.md)
+- Learn how it works: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - Check out the [CHANGELOG.md](CHANGELOG.md)
 - Visit the [GitHub repository](https://github.com/yourusername/rubion)
 - Report issues or contribute!

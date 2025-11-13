@@ -4,12 +4,15 @@
 
 ## Features
 
-- 📛 **Gem Vulnerabilities**: Scans for known security vulnerabilities in Ruby gems
-- 📦 **Gem Versions**: Identifies outdated Ruby gems
-- 📛 **Package Vulnerabilities**: Scans for known security vulnerabilities in NPM packages
-- 📦 **Package Versions**: Identifies outdated NPM packages
-- 📊 **Beautiful Reports**: Organized table output with color-coded severity levels
-- 🚀 **Easy to Use**: Simple CLI interface with a single command
+- 📛 **Gem Vulnerabilities**: Scans for known security vulnerabilities in Ruby gems using `bundle-audit`
+- 📦 **Gem Versions**: Identifies outdated Ruby gems with release dates and version counts
+- 📛 **Package Vulnerabilities**: Scans for known security vulnerabilities in NPM packages using `npm audit`
+- 📦 **Package Versions**: Identifies outdated NPM packages with release dates and version counts
+- 📊 **Beautiful Reports**: Organized table output with severity icons (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low, ⚪ Unknown)
+- 🚀 **Fast & Efficient**: Parallel API processing (10 concurrent threads) for quick results
+- ⚡ **Incremental Output**: Shows gem results immediately, then scans packages
+- 📅 **Release Dates**: Fetches actual release dates from RubyGems.org and NPM registry
+- 🔢 **Version Analysis**: Shows how many versions behind and time difference
 
 ## Installation
 
@@ -40,9 +43,26 @@ rubion scan
 
 This will scan your project for:
 - Ruby gem vulnerabilities (if `Gemfile.lock` exists)
-- Outdated Ruby gems
+- Outdated Ruby gems with release dates
 - NPM package vulnerabilities (if `package.json` exists)
-- Outdated NPM packages
+- Outdated NPM packages with release dates
+
+### Scan options
+
+```bash
+# Scan only Ruby gems (skip NPM packages)
+rubion scan --gems-only
+# or
+rubion scan -g
+
+# Scan only NPM packages (skip Ruby gems)
+rubion scan --packages-only
+# or
+rubion scan -p
+
+# Scan both (default)
+rubion scan
+```
 
 ### View help
 
@@ -54,45 +74,52 @@ rubion help
 
 ```bash
 rubion version
+# or
+rubion -v
 ```
 
 ## Output Example
 
 ```
-================================================================================
-  🔒 RUBION SECURITY & VERSION SCAN REPORT
-================================================================================
+🔍 Scanning project at: /path/to/project
 
-📛 GEM VULNERABILITIES
+📦 Checking Ruby gems... 139/139 ✓
 
-+==============================================================================+
-|                       Ruby Gem Vulnerabilities                              |
-+------------+----------+-----------+----------------+------------------------+
-| Gem        | Version  | Severity  | Advisory       | Title                  |
-+------------+----------+-----------+----------------+------------------------+
-| rack       | 2.0.8    | 🔴 High   | CVE-2022-44570 | Denial of Service...   |
-| nokogiri   | 1.10.4   | 🔴 Critical| CVE-2021-30560| Update bundled libxml2 |
-+------------+----------+-----------+----------------+------------------------+
+Gem Vulnerabilities:
 
-📦 GEM VERSIONS (Outdated)
++----------+--------+---------+------------------------------------------+
+| Level    | Name   | Version | Vulnerability                            |
++----------+--------+---------+------------------------------------------+
+| 🔴 Critical | rexml | 3.4.1   | REXML has DoS condition when parsing... |
+| 🟠 High  | rack   | 2.0.8   | Denial of Service vulnerability         |
++----------+--------+---------+------------------------------------------+
 
-+====================================================================+
-|                     Outdated Ruby Gems                             |
-+----------------+------------------+----------------+---------------+
-| Gem            | Current Version  | Latest Version | Behind By     |
-+----------------+------------------+----------------+---------------+
-| puma           | 4.3.8            | 6.4.0          | 2 major       |
-| devise         | 4.7.3            | 4.9.3          | 2 minor       |
-+----------------+------------------+----------------+---------------+
+Gem Versions:
 
-================================================================================
-  📊 SUMMARY
-================================================================================
-  Total Vulnerabilities: 🔴 5
-  Total Outdated: 10
-================================================================================
++----------+---------+-----------+---------+-----------+-----------+----------+
+| Name     | Current | Date      | Latest  | Date      | Behind By | Versions |
++----------+---------+-----------+---------+-----------+-----------+----------+
+| sidekiq  | 7.30    | 3/5/2024  | 8.1     | 11/11/2025| 1 year    | 15       |
+| fastimage| 2.2.7   | 2/2/2025  | 2.3.2   | 9/9/2025  | 7 months  | 3        |
++----------+---------+-----------+---------+-----------+-----------+----------+
 
-⚠️  ACTION REQUIRED: Please update vulnerable dependencies!
+📦 Checking NPM packages... 45/45 ✓
+
+Package Vulnerabilities:
+
++----------+--------+---------+------------------------------------------+
+| Level    | Name   | Version | Vulnerability                            |
++----------+--------+---------+------------------------------------------+
+| 🟠 High  | moment | 1.2.3   | Wrong timezone date calculation         |
++----------+--------+---------+------------------------------------------+
+
+Package Versions:
+
++----------+---------+-----------+---------+-----------+-----------+----------+
+| Name     | Current | Date      | Latest  | Date      | Behind By | Versions |
++----------+---------+-----------+---------+-----------+-----------+----------+
+| jquery   | 3.7.1   | 4/5/2024  | 3.9.1   | 10/11/2025| 1 year    | 8        |
++----------+---------+-----------+---------+-----------+-----------+----------+
 ```
 
 ## Requirements
@@ -107,6 +134,8 @@ rubion version
 ```bash
 gem install bundler-audit
 ```
+
+**Note:** Without `bundler-audit`, gem vulnerability scanning will be skipped.
 
 ## Development
 
@@ -141,14 +170,23 @@ rake install_local
 Rubion uses a modular architecture:
 
 1. **Scanner** (`lib/rubion/scanner.rb`): Executes various commands to scan for vulnerabilities and outdated versions
-   - `bundle-audit` for gem vulnerabilities
-   - `bundle outdated` for gem versions
-   - `npm audit` for package vulnerabilities
-   - `npm outdated` for package versions
+   - `bundle-audit check` for gem vulnerabilities
+   - `bundle outdated --parseable` for gem versions
+   - `npm audit --json` for package vulnerabilities
+   - `npm outdated --json` for package versions
+   - Fetches release dates and version data from RubyGems.org and NPM registry APIs
+   - Uses parallel processing (10 concurrent threads) for fast API calls
 
 2. **Reporter** (`lib/rubion/reporter.rb`): Formats scan results into beautiful terminal tables using `terminal-table`
+   - Adds severity icons (🔴 🟠 🟡 🟢 ⚪)
+   - Formats dates, time differences, and version counts
+   - Supports incremental output (gems first, then packages)
 
 3. **CLI** (`lib/rubion.rb`): Provides the command-line interface
+   - Parses command-line options (`--gems-only`, `--packages-only`)
+   - Coordinates scanning and reporting
+
+For detailed information about data collection and mapping, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
 
 ## Extending Rubion
 
@@ -198,14 +236,32 @@ If you have any questions or need help, please:
 - Check the documentation
 - Contact the maintainers
 
+## Performance
+
+Rubion is optimized for speed:
+
+- **Parallel API Processing**: Uses 10 concurrent threads to fetch version data from RubyGems.org and NPM registry
+- **Single API Call Per Package**: Fetches all necessary data (dates, version list) in one request
+- **Incremental Output**: Shows gem results immediately, then scans packages (better UX)
+- **Progress Indicators**: Shows real-time progress like "Checking Ruby gems... 10/54"
+
+Typical scan times:
+- Gems only: ~4-5 seconds (for ~140 gems)
+- Packages only: ~3-4 seconds (for ~50 packages)
+- Both: ~7-9 seconds total
+
 ## Roadmap
 
 Future features planned:
+- [ ] Sorting options (by severity, name, date, etc.)
+- [ ] Filtering options (by severity, outdated threshold, etc.)
+- [ ] Export formats (JSON, CSV, HTML)
+- [ ] Summary statistics
+- [ ] Update command suggestions
 - [ ] Support for Python (pip) packages
 - [ ] Support for PHP (composer) packages
 - [ ] Support for Go modules
-- [ ] JSON/CSV output formats
-- [ ] CI/CD integration
+- [ ] CI/CD integration flags
 - [ ] Configurable severity thresholds
 - [ ] Auto-fix suggestions
 - [ ] Historical tracking of vulnerabilities

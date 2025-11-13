@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-14
+
+### Added
+- Real API integration for fetching release dates from RubyGems.org and NPM registry
+- "Behind By" column showing time difference (days/months/years) between current and latest versions
+- "Versions" column showing count of versions between current and latest
+- Progress indicators with counts (e.g., "Checking Ruby gems... 10/54")
+- CLI flags: `--gems-only` / `-g` and `--packages-only` / `-p` for selective scanning
+- Incremental output: gem results displayed immediately, then packages scanned
+- Parallel processing: 10 concurrent threads for API calls (2x faster)
+- Severity icons: 🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low, ⚪ Unknown
+- Single API call per gem/package to fetch all version data (dates + version list)
+- Support for "Unknown" criticality from bundle-audit (no longer mapped to Medium)
+
+### Changed
+- **Performance**: Reduced scan time from ~8.8s to ~4.1s for gems-only scans
+- API calls now fetch all version information in one request instead of multiple calls
+- Date format: M/D/YYYY (e.g., "3/5/2024")
+- Improved error handling for API calls with timeouts and SSL verification bypass
+- Updated output format to include date columns and version analysis
+
+### Fixed
+- Fixed "Behind By" calculation to correctly parse dates in M/D/YYYY format
+- Fixed CLI flag parsing for `--gems-only` and `--packages-only`
+- Improved handling of bundle-audit output when vulnerabilities are found (exit code 1)
+- Corrected severity mapping: "Unknown" criticality now shows as "⚪ Unknown" instead of "Medium"
+
 ## [0.2.0] - 2025-01-14
 
 ### Changed
@@ -87,7 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yourusername/rubion/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/rubion/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/yourusername/rubion/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/yourusername/rubion/compare/v0.1.0...v0.1.1
