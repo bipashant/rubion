@@ -34,21 +34,25 @@ module Rubion
       @result
     end
 
-    def scan_incremental
+    def scan_incremental(options = { gems: true, packages: true })
       puts "🔍 Scanning project at: #{@project_path}\n\n"
       
-      # Scan and display Ruby gems first
-      scan_ruby_gems
+      # Scan and display Ruby gems first (if enabled)
+      if options[:gems]
+        scan_ruby_gems
+        
+        # Print gem results immediately
+        puts "\n"
+        reporter = Reporter.new(@result)
+        reporter.print_gem_vulnerabilities
+        reporter.print_gem_versions
+      end
       
-      # Print gem results immediately
-      puts "\n"
-      reporter = Reporter.new(@result)
-      reporter.print_gem_vulnerabilities
-      reporter.print_gem_versions
-      
-      # Then scan NPM packages
-      puts "\n"
-      scan_npm_packages
+      # Then scan NPM packages (if enabled)
+      if options[:packages]
+        puts "\n" if options[:gems]  # Add spacing if gems were scanned
+        scan_npm_packages
+      end
       
       @result
     end

@@ -13,7 +13,9 @@ module Rubion
       
       case command
       when 'scan'
-        scan
+        # Parse options
+        options = parse_scan_options(args[1..-1])
+        scan(options)
       when 'version', '-v', '--version'
         puts "Rubion version #{VERSION}"
       when 'help', '-h', '--help', nil
@@ -25,16 +27,32 @@ module Rubion
       end
     end
 
-    def self.scan
+    def self.parse_scan_options(args)
+      options = { gems: true, packages: true }
+      
+      # If specific flags are provided, turn off defaults
+      if args.include?('--gems') || args.include?('--packages')
+        options[:gems] = args.include?('--gems')
+        options[:packages] = args.include?('--packages')
+      end
+      
+      options
+    end
+
+    def self.scan(options = { gems: true, packages: true })
       project_path = Dir.pwd
       
       scanner = Scanner.new(project_path: project_path)
-      result = scanner.scan_incremental
+      result = scanner.scan_incremental(options)
       
-      # Results are already printed incrementally, just print package results
+      # Results are already printed incrementally based on options
       reporter = Reporter.new(result)
-      reporter.print_package_vulnerabilities
-      reporter.print_package_versions
+      
+      # Only print package results if packages were scanned
+      if options[:packages]
+        reporter.print_package_vulnerabilities
+        reporter.print_package_versions
+      end
     end
 
     def self.print_help
@@ -43,9 +61,14 @@ module Rubion
         🔒 Rubion - Security & Version Scanner for Ruby and JavaScript projects
         
         USAGE:
-          rubion scan                 Scan current project for vulnerabilities and outdated versions
+          rubion scan [OPTIONS]       Scan current project for vulnerabilities and outdated versions
           rubion version              Display Rubion version
           rubion help                 Display this help message
+        
+        SCAN OPTIONS:
+          --gems, --gem, -g           Scan only Ruby gems (skip NPM packages)
+          --packages, --npm, -p       Scan only NPM packages (skip Ruby gems)
+          --all, -a                   Scan both gems and packages (default)
         
         DESCRIPTION:
           Rubion scans your project for:
@@ -55,15 +78,21 @@ module Rubion
             - Outdated NPM packages (using npm outdated)
         
         OUTPUT:
-          Results are displayed in organized tables:
-            📛 Gem Vulnerabilities
-            📦 Gem Versions (Outdated)
-            📛 NPM Package Vulnerabilities
-            📦 NPM Package Versions (Outdated)
+          Results are displayed in organized tables with:
+            📛 Vulnerabilities with severity icons (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
+            📦 Version information with release dates
+            ⏱️  Time difference ("Behind By" column)
+            🔢 Version count between current and latest
         
         EXAMPLES:
-          # Scan current directory
+          # Scan both gems and packages (default)
           rubion scan
+          
+          # Scan only Ruby gems
+          rubion scan --gems
+          
+          # Scan only NPM packages
+          rubion scan --packages
           
           # Get help
           rubion help
