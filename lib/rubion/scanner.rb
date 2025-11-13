@@ -37,26 +37,22 @@ module Rubion
 
     def scan_ruby_gems
       return unless File.exist?(File.join(@project_path, 'Gemfile.lock'))
-
-      puts "📦 Checking Ruby gems..."
       
       # Check for vulnerabilities using bundler-audit
       check_gem_vulnerabilities
       
-      # Check for outdated versions using bundle outdated
+      # Check for outdated versions using bundle outdated (will show progress)
       check_gem_versions
     end
 
     def scan_npm_packages
       package_json = File.join(@project_path, 'package.json')
       return unless File.exist?(package_json)
-
-      puts "📦 Checking NPM packages..."
       
       # Check for vulnerabilities using npm audit
       check_npm_vulnerabilities
       
-      # Check for outdated versions using npm outdated
+      # Check for outdated versions using npm outdated (will show progress)
       check_npm_versions
     end
 
@@ -143,29 +139,43 @@ module Rubion
 
     def parse_bundle_outdated_output(output)
       versions = []
+      lines_to_process = []
       
+      # First pass: collect all lines to process
       output.each_line do |line|
         next if line.strip.empty?
         
         # Parse format: gem_name (newest version, installed version, requested version)
         if line =~ /^(.+?)\s+\(newest\s+(.+?),\s+installed\s+(.+?)(?:,|\))/
-          gem_name = $1.strip
-          current_version = $3.strip
-          latest_version = $2.strip
-          
-          # Fetch release dates from RubyGems API
-          current_date = fetch_gem_release_date(gem_name, current_version)
-          latest_date = fetch_gem_release_date(gem_name, latest_version)
-          
-          versions << {
-            gem: gem_name,
-            current: current_version,
-            current_date: current_date,
-            latest: latest_version,
-            latest_date: latest_date
+          lines_to_process << {
+            gem_name: $1.strip,
+            current_version: $3.strip,
+            latest_version: $2.strip
           }
         end
       end
+      
+      total = lines_to_process.size
+      
+      # Second pass: process with progress counter
+      lines_to_process.each_with_index do |line_data, index|
+        print "\r📦 Checking Ruby gems... #{index + 1}/#{total}"
+        $stdout.flush
+        
+        # Fetch release dates from RubyGems API
+        current_date = fetch_gem_release_date(line_data[:gem_name], line_data[:current_version])
+        latest_date = fetch_gem_release_date(line_data[:gem_name], line_data[:latest_version])
+        
+        versions << {
+          gem: line_data[:gem_name],
+          current: line_data[:current_version],
+          current_date: current_date,
+          latest: line_data[:latest_version],
+          latest_date: latest_date
+        }
+      end
+      
+      puts "\r📦 Checking Ruby gems... #{total}/#{total} ✓" if total > 0
       
       @result.gem_versions = versions.empty? ? dummy_gem_versions : versions
     end
@@ -204,24 +214,40 @@ module Rubion
       versions = []
       
       if data.is_a?(Hash)
+        packages_to_process = []
+        
+        # First pass: collect all packages to process
         data.each do |name, info|
           next unless info.is_a?(Hash)
           
-          current_version = info['current'] || 'unknown'
-          latest_version = info['latest'] || 'unknown'
+          packages_to_process << {
+            name: name,
+            current_version: info['current'] || 'unknown',
+            latest_version: info['latest'] || 'unknown'
+          }
+        end
+        
+        total = packages_to_process.size
+        
+        # Second pass: process with progress counter
+        packages_to_process.each_with_index do |pkg_data, index|
+          print "\r📦 Checking NPM packages... #{index + 1}/#{total}"
+          $stdout.flush
           
           # Fetch release dates from NPM registry
-          current_date = fetch_npm_release_date(name, current_version)
-          latest_date = fetch_npm_release_date(name, latest_version)
+          current_date = fetch_npm_release_date(pkg_data[:name], pkg_data[:current_version])
+          latest_date = fetch_npm_release_date(pkg_data[:name], pkg_data[:latest_version])
           
           versions << {
-            package: name,
-            current: current_version,
+            package: pkg_data[:name],
+            current: pkg_data[:current_version],
             current_date: current_date,
-            latest: latest_version,
+            latest: pkg_data[:latest_version],
             latest_date: latest_date
           }
         end
+        
+        puts "\r📦 Checking NPM packages... #{total}/#{total} ✓" if total > 0
       end
       
       @result.package_versions = versions.empty? ? dummy_npm_versions : versions
