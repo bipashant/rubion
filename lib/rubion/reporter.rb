@@ -38,15 +38,15 @@ module Rubion
 
     def _print_gem_vulnerabilities
       puts "Gem Vulnerabilities:\n\n"
-      
+
       if @result.gem_vulnerabilities.empty?
         puts "  ✅ No vulnerabilities found!\n\n"
         return
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Level', 'Name', 'Version', 'Vulnerability']
-        
+        t.headings = %w[Level Name Version Vulnerability]
+
         @result.gem_vulnerabilities.each do |vuln|
           t.add_row [
             severity_with_icon(vuln[:severity]),
@@ -56,7 +56,7 @@ module Rubion
           ]
         end
       end
-      
+
       puts table
       puts "\n"
     end
@@ -73,8 +73,8 @@ module Rubion
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Level', 'Name', 'Version', 'Vulnerability']
-        
+        t.headings = %w[Level Name Version Vulnerability]
+
         @result.gem_vulnerabilities.each do |vuln|
           t.add_row [
             severity_with_icon(vuln[:severity]),
@@ -84,22 +84,22 @@ module Rubion
           ]
         end
       end
-      
+
       puts table
       puts "\n"
     end
 
     def _print_gem_versions
       puts "Gem Versions:\n\n"
-      
+
       if @result.gem_versions.empty?
         puts "  ✅ All gems are up to date!\n\n"
         return
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By', 'Versions']
-        
+        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+
         @result.gem_versions.each do |gem|
           t.add_row [
             gem[:gem],
@@ -112,22 +112,22 @@ module Rubion
           ]
         end
       end
-      
+
       puts table
       puts "\n"
     end
 
     def _print_package_vulnerabilities
       puts "Package Vulnerabilities:\n\n"
-      
+
       if @result.package_vulnerabilities.empty?
         puts "  ✅ No vulnerabilities found!\n\n"
         return
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Level', 'Name', 'Version', 'Vulnerability']
-        
+        t.headings = %w[Level Name Version Vulnerability]
+
         @result.package_vulnerabilities.each do |vuln|
           t.add_row [
             severity_with_icon(vuln[:severity]),
@@ -137,14 +137,14 @@ module Rubion
           ]
         end
       end
-      
+
       puts table
       puts "\n"
     end
 
     def _print_package_versions
       puts "Package Versions:\n\n"
-      
+
       if @result.package_versions.empty?
         puts "  ✅ All packages are up to date!\n\n"
         return
@@ -152,7 +152,7 @@ module Rubion
 
       table = Terminal::Table.new do |t|
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By', 'Versions']
-        
+
         @result.package_versions.each do |pkg|
           t.add_row [
             pkg[:package],
@@ -165,7 +165,7 @@ module Rubion
           ]
         end
       end
-      
+
       puts table
       puts "\n"
     end
@@ -179,7 +179,7 @@ module Rubion
 
     def severity_with_icon(severity)
       severity_str = severity.to_s.capitalize
-      
+
       case severity.to_s.downcase
       when 'critical'
         "🔴 #{severity_str}"
@@ -217,18 +217,19 @@ module Rubion
 
     def truncate(text, length = 50)
       return text if text.length <= length
-      "#{text[0..length-3]}..."
+
+      "#{text[0..length - 3]}..."
     end
 
     def version_difference(current, latest)
       # Simple version difference calculation
       current_parts = current.split('.').map(&:to_i)
       latest_parts = latest.split('.').map(&:to_i)
-      
+
       major_diff = (latest_parts[0] || 0) - (current_parts[0] || 0)
       minor_diff = (latest_parts[1] || 0) - (current_parts[1] || 0)
       patch_diff = (latest_parts[2] || 0) - (current_parts[2] || 0)
-      
+
       if major_diff > 0
         "#{major_diff} major"
       elsif minor_diff > 0
@@ -236,11 +237,10 @@ module Rubion
       elsif patch_diff > 0
         "#{patch_diff} patch"
       else
-        "up to date"
+        'up to date'
       end
-    rescue
-      "unknown"
+    rescue StandardError
+      'unknown'
     end
   end
 end
-

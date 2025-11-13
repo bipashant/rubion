@@ -204,20 +204,25 @@ module Rubion
           print "\r📦 Checking Ruby gems... #{index + 1}/#{total}"
           $stdout.flush
           
-          # Fetch release dates and version info from RubyGems API
-          current_info = fetch_gem_version_info(line_data[:gem_name], line_data[:current_version])
-          latest_info = fetch_gem_version_info(line_data[:gem_name], line_data[:latest_version])
+          # Fetch all version info once per gem (includes dates and version list)
+          gem_data = fetch_gem_all_versions(line_data[:gem_name])
           
-          # Calculate time difference and version count
-          time_diff = calculate_time_difference(current_info[:date], latest_info[:date])
-          version_count = count_versions_between(line_data[:gem_name], line_data[:current_version], line_data[:latest_version])
+          # Extract dates for current and latest versions
+          current_date = gem_data[:versions][line_data[:current_version]] || 'N/A'
+          latest_date = gem_data[:versions][line_data[:latest_version]] || 'N/A'
+          
+          # Calculate time difference
+          time_diff = calculate_time_difference(current_date, latest_date)
+          
+          # Count versions between current and latest
+          version_count = count_versions_from_list(gem_data[:version_list], line_data[:current_version], line_data[:latest_version])
           
           versions << {
             gem: line_data[:gem_name],
             current: line_data[:current_version],
-            current_date: current_info[:date],
+            current_date: current_date,
             latest: line_data[:latest_version],
-            latest_date: latest_info[:date],
+            latest_date: latest_date,
             time_diff: time_diff,
             version_count: version_count
           }
@@ -282,20 +287,25 @@ module Rubion
           print "\r📦 Checking NPM packages... #{index + 1}/#{total}"
           $stdout.flush
           
-          # Fetch release dates from NPM registry
-          current_info = fetch_npm_version_info(pkg_data[:name], pkg_data[:current_version])
-          latest_info = fetch_npm_version_info(pkg_data[:name], pkg_data[:latest_version])
+          # Fetch all version info once per package (includes dates and version list)
+          pkg_data_full = fetch_npm_all_versions(pkg_data[:name])
           
-          # Calculate time difference and version count
-          time_diff = calculate_time_difference(current_info[:date], latest_info[:date])
-          version_count = count_npm_versions_between(pkg_data[:name], pkg_data[:current_version], pkg_data[:latest_version])
+          # Extract dates for current and latest versions
+          current_date = pkg_data_full[:versions][pkg_data[:current_version]] || 'N/A'
+          latest_date = pkg_data_full[:versions][pkg_data[:latest_version]] || 'N/A'
+          
+          # Calculate time difference
+          time_diff = calculate_time_difference(current_date, latest_date)
+          
+          # Count versions between current and latest
+          version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version], pkg_data[:latest_version])
           
           versions << {
             package: pkg_data[:name],
             current: pkg_data[:current_version],
-            current_date: current_info[:date],
+            current_date: current_date,
             latest: pkg_data[:latest_version],
-            latest_date: latest_info[:date],
+            latest_date: latest_date,
             time_diff: time_diff,
             version_count: version_count
           }
@@ -382,9 +392,9 @@ module Rubion
     #   ]
     # end
 
-    # Fetch gem version info (date) from RubyGems API
-    def fetch_gem_version_info(gem_name, version)
-      return { date: 'N/A' } if version == 'unknown' || gem_name.nil?
+    # Fetch all gem version info (dates and version list) from RubyGems API in one call
+    def fetch_gem_all_versions(gem_name)
+      return { versions: {}, version_list: [] } if gem_name.nil?
       
       uri = URI("https://rubygems.org/api/v1/versions/#{gem_name}.json")
       
@@ -398,54 +408,44 @@ module Rubion
       request = Net::HTTP::Get.new(uri.request_uri)
       response = http.request(request)
       
-      return { date: 'N/A' } unless response.is_a?(Net::HTTPSuccess)
-      
-      versions = JSON.parse(response.body)
-      version_info = versions.find { |v| v['number'] == version }
-      
-      if version_info && version_info['created_at']
-        date = DateTime.parse(version_info['created_at'])
-        { date: date.strftime('%-m/%-d/%Y') }  # Format: 3/5/2024
-      else
-        { date: 'N/A' }
-      end
-    rescue => e
-      puts "  Debug: Error fetching date for #{gem_name} #{version}: #{e.message}" if ENV['DEBUG']
-      { date: 'N/A' }
-    end
-
-    # Count versions between current and latest
-    def count_versions_between(gem_name, current_version, latest_version)
-      return 'N/A' if current_version == 'unknown' || latest_version == 'unknown' || gem_name.nil?
-      return 0 if current_version == latest_version
-      
-      uri = URI("https://rubygems.org/api/v1/versions/#{gem_name}.json")
-      
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      http.open_timeout = 2
-      http.read_timeout = 3
-      
-      request = Net::HTTP::Get.new(uri.request_uri)
-      response = http.request(request)
-      
-      return 'N/A' unless response.is_a?(Net::HTTPSuccess)
+      return { versions: {}, version_list: [] } unless response.is_a?(Net::HTTPSuccess)
       
       all_versions = JSON.parse(response.body)
-      version_numbers = all_versions.map { |v| v['number'] }
+      
+      # Build hash of version => date
+      version_dates = {}
+      version_list = []
+      
+      all_versions.each do |v|
+        version_num = v['number']
+        if v['created_at']
+          date = DateTime.parse(v['created_at'])
+          version_dates[version_num] = date.strftime('%-m/%-d/%Y')
+        else
+          version_dates[version_num] = 'N/A'
+        end
+        version_list << version_num
+      end
+      
+      { versions: version_dates, version_list: version_list }
+    rescue => e
+      puts "  Debug: Error fetching versions for #{gem_name}: #{e.message}" if ENV['DEBUG']
+      { versions: {}, version_list: [] }
+    end
+
+    # Count versions between current and latest from a version list
+    def count_versions_from_list(version_list, current_version, latest_version)
+      return 'N/A' if current_version == 'unknown' || latest_version == 'unknown' || version_list.empty?
+      return 0 if current_version == latest_version
       
       # Find indices of current and latest versions
-      current_idx = version_numbers.index(current_version)
-      latest_idx = version_numbers.index(latest_version)
+      current_idx = version_list.index(current_version)
+      latest_idx = version_list.index(latest_version)
       
       return 'N/A' if current_idx.nil? || latest_idx.nil?
       
       # Count versions between (exclusive of current, inclusive of latest)
       (latest_idx - current_idx).abs
-    rescue => e
-      puts "  Debug: Error counting versions for #{gem_name}: #{e.message}" if ENV['DEBUG']
-      'N/A'
     end
 
     # Calculate time difference between two dates
@@ -483,76 +483,51 @@ module Rubion
       end
     end
 
-    # Fetch npm package version info (date) from NPM registry
-    def fetch_npm_version_info(package_name, version)
-      return { date: 'N/A' } if version == 'unknown' || package_name.nil?
-      
+    # Fetch all NPM package version info (dates and version list) from NPM registry in one call
+    def fetch_npm_all_versions(package_name)
+      return { versions: {}, version_list: [] } if package_name.nil?
+
       # Encode package name for URL (handles scoped packages like @babel/core)
       encoded_name = URI.encode_www_form_component(package_name)
       uri = URI("https://registry.npmjs.org/#{encoded_name}")
-      
+
       # Set timeout to avoid hanging
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Skip SSL verification
       http.open_timeout = 2
       http.read_timeout = 3
-      
-      request = Net::HTTP::Get.new(uri.request_uri)
-      response = http.request(request)
-      
-      return { date: 'N/A' } unless response.is_a?(Net::HTTPSuccess)
-      
-      data = JSON.parse(response.body)
-      
-      if data['time'] && data['time'][version]
-        date = DateTime.parse(data['time'][version])
-        { date: date.strftime('%-m/%-d/%Y') }  # Format: 3/5/2024
-      else
-        { date: 'N/A' }
-      end
-    rescue => e
-      puts "  Debug: Error fetching date for #{package_name} #{version}: #{e.message}" if ENV['DEBUG']
-      { date: 'N/A' }
-    end
-
-    # Count NPM versions between current and latest
-    def count_npm_versions_between(package_name, current_version, latest_version)
-      return 'N/A' if current_version == 'unknown' || latest_version == 'unknown' || package_name.nil?
-      return 0 if current_version == latest_version
-      
-      encoded_name = URI.encode_www_form_component(package_name)
-      uri = URI("https://registry.npmjs.org/#{encoded_name}")
-
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      http.open_timeout = 2
-      http.read_timeout = 3
 
       request = Net::HTTP::Get.new(uri.request_uri)
       response = http.request(request)
 
-      return 'N/A' unless response.is_a?(Net::HTTPSuccess)
+      return { versions: {}, version_list: [] } unless response.is_a?(Net::HTTPSuccess)
 
       data = JSON.parse(response.body)
       
-      return 'N/A' unless data['time'] && data['versions']
+      return { versions: {}, version_list: [] } unless data['time'] && data['versions']
       
-      # Get all version numbers sorted by release date
+      # Build hash of version => date and sorted version list
+      version_dates = {}
       version_times = data['time'].select { |k, v| k != 'created' && k != 'modified' && data['versions'][k] }
+      
+      # Sort versions by release date
       sorted_versions = version_times.sort_by { |k, v| DateTime.parse(v) }.map(&:first)
       
-      current_idx = sorted_versions.index(current_version)
-      latest_idx = sorted_versions.index(latest_version)
+      # Build date hash
+      version_times.each do |version, date_str|
+        begin
+          date = DateTime.parse(date_str)
+          version_dates[version] = date.strftime('%-m/%-d/%Y')
+        rescue
+          version_dates[version] = 'N/A'
+        end
+      end
       
-      return 'N/A' if current_idx.nil? || latest_idx.nil?
-      
-      # Count versions between (exclusive of current, inclusive of latest)
-      (latest_idx - current_idx).abs
+      { versions: version_dates, version_list: sorted_versions }
     rescue => e
-      puts "  Debug: Error counting versions for #{package_name}: #{e.message}" if ENV['DEBUG']
-      'N/A'
+      puts "  Debug: Error fetching versions for #{package_name}: #{e.message}" if ENV['DEBUG']
+      { versions: {}, version_list: [] }
     end
   end
 end
