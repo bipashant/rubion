@@ -38,15 +38,15 @@ module Rubion
       table = Terminal::Table.new do |t|
         t.title = "Ruby Gem Vulnerabilities"
         t.headings = ['Gem', 'Version', 'Severity', 'Advisory', 'Title']
-        t.style = { width: 120, border_x: '=', border_i: '=' }
+        t.style = { border_x: '=', border_i: '=' }
         
         @result.gem_vulnerabilities.each do |vuln|
           t.add_row [
-            vuln[:gem],
+            truncate(vuln[:gem], 25),
             vuln[:version],
             colorize_severity(vuln[:severity]),
             vuln[:advisory],
-            truncate(vuln[:title], 40)
+            truncate(vuln[:title], 50)
           ]
         end
       end
@@ -66,12 +66,11 @@ module Rubion
       table = Terminal::Table.new do |t|
         t.title = "Outdated Ruby Gems"
         t.headings = ['Gem', 'Current Version', 'Latest Version', 'Behind By']
-        t.style = { width: 100 }
         
         @result.gem_versions.each do |gem|
           behind = version_difference(gem[:current], gem[:latest])
           t.add_row [
-            gem[:gem],
+            truncate(gem[:gem], 30),
             gem[:current],
             gem[:latest],
             behind
@@ -94,12 +93,12 @@ module Rubion
       table = Terminal::Table.new do |t|
         t.title = "NPM Package Vulnerabilities"
         t.headings = ['Package', 'Version', 'Severity', 'Title']
-        t.style = { width: 120, border_x: '=', border_i: '=' }
+        t.style = { border_x: '=', border_i: '=' }
         
         @result.package_vulnerabilities.each do |vuln|
           t.add_row [
-            vuln[:package],
-            vuln[:version],
+            truncate(vuln[:package], 30),
+            truncate(vuln[:version], 20),
             colorize_severity(vuln[:severity]),
             truncate(vuln[:title], 50)
           ]
@@ -121,12 +120,11 @@ module Rubion
       table = Terminal::Table.new do |t|
         t.title = "Outdated NPM Packages"
         t.headings = ['Package', 'Current Version', 'Latest Version', 'Behind By']
-        t.style = { width: 100 }
         
         @result.package_versions.each do |pkg|
           behind = version_difference(pkg[:current], pkg[:latest])
           t.add_row [
-            pkg[:package],
+            truncate(pkg[:package], 40),
             pkg[:current],
             pkg[:latest],
             behind
