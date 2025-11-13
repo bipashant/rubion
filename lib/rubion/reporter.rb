@@ -37,7 +37,7 @@ module Rubion
         
         @result.gem_vulnerabilities.each do |vuln|
           t.add_row [
-            vuln[:severity],
+            severity_with_icon(vuln[:severity]),
             vuln[:gem],
             vuln[:version],
             truncate(vuln[:title], 50)
@@ -88,7 +88,7 @@ module Rubion
         
         @result.package_vulnerabilities.each do |vuln|
           t.add_row [
-            vuln[:severity].capitalize,
+            severity_with_icon(vuln[:severity]),
             vuln[:package],
             vuln[:version],
             truncate(vuln[:title], 50)
@@ -132,6 +132,23 @@ module Rubion
     end
 
     # Helpers
+
+    def severity_with_icon(severity)
+      severity_str = severity.to_s.capitalize
+      
+      case severity.to_s.downcase
+      when 'critical'
+        "🔴 #{severity_str}"
+      when 'high'
+        "🟠 #{severity_str}"
+      when 'medium'
+        "🟡 #{severity_str}"
+      when 'low'
+        "🟢 #{severity_str}"
+      else
+        severity_str
+      end
+    end
 
     def colorize_severity(severity)
       case severity.to_s.downcase
