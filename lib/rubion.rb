@@ -30,8 +30,15 @@ module Rubion
     def self.parse_scan_options(args)
       options = { gems: true, packages: true }
       
-      # If specific flags are provided, turn off defaults
-      if args.include?('--gems') || args.include?('--packages')
+      # Check for --gems-only or --packages-only flags
+      if args.include?('--gems-only') || args.include?('-g')
+        options[:gems] = true
+        options[:packages] = false
+      elsif args.include?('--packages-only') || args.include?('-p')
+        options[:gems] = false
+        options[:packages] = true
+      elsif args.include?('--gems') || args.include?('--packages')
+        # Legacy support for --gems and --packages
         options[:gems] = args.include?('--gems')
         options[:packages] = args.include?('--packages')
       end
