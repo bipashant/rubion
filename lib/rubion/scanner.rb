@@ -63,12 +63,12 @@ module Rubion
       if status.success? || stdout.include?("vulnerabilities found")
         parse_bundler_audit_output(stdout)
       else
-        # Fallback to dummy data if bundler-audit is not installed
-        @result.gem_vulnerabilities = dummy_gem_vulnerabilities
+        # No vulnerabilities found or bundler-audit not available
+        @result.gem_vulnerabilities = []
       end
     rescue => e
-      puts "  ⚠️  Could not run bundle-audit (#{e.message}). Using dummy data."
-      @result.gem_vulnerabilities = dummy_gem_vulnerabilities
+      puts "  ⚠️  Could not run bundle-audit (#{e.message}). Skipping gem vulnerability check."
+      @result.gem_vulnerabilities = []
     end
 
     def check_gem_versions
@@ -77,11 +77,12 @@ module Rubion
       if status.success? || !stdout.empty?
         parse_bundle_outdated_output(stdout)
       else
-        @result.gem_versions = dummy_gem_versions
+        # No outdated gems found
+        @result.gem_versions = []
       end
     rescue => e
-      puts "  ⚠️  Could not run bundle outdated (#{e.message}). Using dummy data."
-      @result.gem_versions = dummy_gem_versions
+      puts "  ⚠️  Could not run bundle outdated (#{e.message}). Skipping gem version check."
+      @result.gem_versions = []
     end
 
     def check_npm_vulnerabilities
@@ -91,11 +92,11 @@ module Rubion
         data = JSON.parse(stdout)
         parse_npm_audit_output(data)
       rescue JSON::ParserError
-        @result.package_vulnerabilities = dummy_npm_vulnerabilities
+        @result.package_vulnerabilities = []
       end
     rescue => e
-      puts "  ⚠️  Could not run npm audit (#{e.message}). Using dummy data."
-      @result.package_vulnerabilities = dummy_npm_vulnerabilities
+      puts "  ⚠️  Could not run npm audit (#{e.message}). Skipping package vulnerability check."
+      @result.package_vulnerabilities = []
     end
 
     def check_npm_versions
@@ -105,11 +106,11 @@ module Rubion
         data = JSON.parse(stdout) unless stdout.empty?
         parse_npm_outdated_output(data || {})
       rescue JSON::ParserError
-        @result.package_versions = dummy_npm_versions
+        @result.package_versions = []
       end
     rescue => e
-      puts "  ⚠️  Could not run npm outdated (#{e.message}). Using dummy data."
-      @result.package_versions = dummy_npm_versions
+      puts "  ⚠️  Could not run npm outdated (#{e.message}). Skipping package version check."
+      @result.package_versions = []
     end
 
     # Parsers
@@ -134,7 +135,7 @@ module Rubion
         end
       end
       
-      @result.gem_vulnerabilities = vulnerabilities.empty? ? dummy_gem_vulnerabilities : vulnerabilities
+      @result.gem_vulnerabilities = vulnerabilities
     end
 
     def parse_bundle_outdated_output(output)
@@ -177,7 +178,7 @@ module Rubion
       
       puts "\r📦 Checking Ruby gems... #{total}/#{total} ✓" if total > 0
       
-      @result.gem_versions = versions.empty? ? dummy_gem_versions : versions
+      @result.gem_versions = versions
     end
 
     def parse_npm_audit_output(data)
@@ -204,10 +205,10 @@ module Rubion
         end
       end
       
-      @result.package_vulnerabilities = vulnerabilities.empty? ? dummy_npm_vulnerabilities : vulnerabilities
+      @result.package_vulnerabilities = vulnerabilities
     rescue => e
       puts "  ⚠️  Error parsing npm audit data: #{e.message}"
-      @result.package_vulnerabilities = dummy_npm_vulnerabilities
+      @result.package_vulnerabilities = []
     end
 
     def parse_npm_outdated_output(data)
@@ -250,82 +251,83 @@ module Rubion
         puts "\r📦 Checking NPM packages... #{total}/#{total} ✓" if total > 0
       end
       
-      @result.package_versions = versions.empty? ? dummy_npm_versions : versions
+      @result.package_versions = versions
     rescue => e
       puts "  ⚠️  Error parsing npm outdated data: #{e.message}"
-      @result.package_versions = dummy_npm_versions
+      @result.package_versions = []
     end
 
-    # Dummy data for demonstration
+    # Dummy data for demonstration (commented out - only show real data)
+    # Uncomment these methods if you need dummy data for testing
 
-    def dummy_gem_vulnerabilities
-      [
-        {
-          gem: 'rails',
-          version: '7.2.2.2',
-          severity: 'Critical',
-          advisory: 'CVE-2024-12345',
-          title: 'ActiveRecord attack'
-        },
-        {
-          gem: 'rack',
-          version: '3.1.18',
-          severity: 'High',
-          advisory: 'CVE-2024-54321',
-          title: 'Man in middle attack'
-        },
-        {
-          gem: 'nokogiri',
-          version: '1.10.4',
-          severity: 'Medium',
-          advisory: 'CVE-2021-30560',
-          title: 'Update bundled libxml2 to v2.9.12'
-        }
-      ]
-    end
+    # def dummy_gem_vulnerabilities
+    #   [
+    #     {
+    #       gem: 'rails',
+    #       version: '7.2.2.2',
+    #       severity: 'Critical',
+    #       advisory: 'CVE-2024-12345',
+    #       title: 'ActiveRecord attack'
+    #     },
+    #     {
+    #       gem: 'rack',
+    #       version: '3.1.18',
+    #       severity: 'High',
+    #       advisory: 'CVE-2024-54321',
+    #       title: 'Man in middle attack'
+    #     },
+    #     {
+    #       gem: 'nokogiri',
+    #       version: '1.10.4',
+    #       severity: 'Medium',
+    #       advisory: 'CVE-2021-30560',
+    #       title: 'Update bundled libxml2 to v2.9.12'
+    #     }
+    #   ]
+    # end
 
-    def dummy_gem_versions
-      [
-        { gem: 'sidekiq', current: '7.3.0', current_date: '3/5/2024', latest: '8.1.0', latest_date: '11/11/2024' },
-        { gem: 'fastimage', current: '2.2.7', current_date: '2/2/2025', latest: '2.3.2', latest_date: '9/9/2025' },
-        { gem: 'puma', current: '4.3.8', current_date: '1/15/2024', latest: '6.4.0', latest_date: '10/20/2024' },
-        { gem: 'devise', current: '4.7.3', current_date: '3/10/2024', latest: '4.9.3', latest_date: '8/15/2024' },
-        { gem: 'rspec-rails', current: '4.0.2', current_date: '2/5/2024', latest: '6.1.0', latest_date: '12/1/2024' }
-      ]
-    end
+    # def dummy_gem_versions
+    #   [
+    #     { gem: 'sidekiq', current: '7.3.0', current_date: '3/5/2024', latest: '8.1.0', latest_date: '11/11/2024' },
+    #     { gem: 'fastimage', current: '2.2.7', current_date: '2/2/2025', latest: '2.3.2', latest_date: '9/9/2025' },
+    #     { gem: 'puma', current: '4.3.8', current_date: '1/15/2024', latest: '6.4.0', latest_date: '10/20/2024' },
+    #     { gem: 'devise', current: '4.7.3', current_date: '3/10/2024', latest: '4.9.3', latest_date: '8/15/2024' },
+    #     { gem: 'rspec-rails', current: '4.0.2', current_date: '2/5/2024', latest: '6.1.0', latest_date: '12/1/2024' }
+    #   ]
+    # end
 
-    def dummy_npm_vulnerabilities
-      [
-        {
-          package: 'moment',
-          version: '1.2.3',
-          severity: 'high',
-          title: 'Wrong timezone date'
-        },
-        {
-          package: 'axios',
-          version: '0.21.1',
-          severity: 'high',
-          title: 'Server-Side Request Forgery in axios'
-        },
-        {
-          package: 'minimist',
-          version: '1.2.5',
-          severity: 'critical',
-          title: 'Prototype Pollution in minimist'
-        }
-      ]
-    end
+    # def dummy_npm_vulnerabilities
+    #   [
+    #     {
+    #       package: 'moment',
+    #       version: '1.2.3',
+    #       severity: 'high',
+    #       title: 'Wrong timezone date'
+    #     },
+    #     {
+    #       package: 'axios',
+    #       version: '0.21.1',
+    #       severity: 'high',
+    #       title: 'Server-Side Request Forgery in axios'
+    #     },
+    #     {
+    #       package: 'minimist',
+    #       version: '1.2.5',
+    #       severity: 'critical',
+    #       title: 'Prototype Pollution in minimist'
+    #     }
+    #   ]
+    # end
 
-    def dummy_npm_versions
-      [
-        { package: 'jquery', current: '3.7.1', current_date: '4/5/2024', latest: '3.9.1', latest_date: '10/11/2025' },
-        { package: 'vue', current: '2.6.12', current_date: '5/15/2024', latest: '3.4.3', latest_date: '11/20/2024' },
-        { package: 'webpack', current: '4.46.0', current_date: '3/8/2024', latest: '5.89.0', latest_date: '9/25/2024' },
-        { package: 'eslint', current: '7.32.0', current_date: '2/12/2024', latest: '8.56.0', latest_date: '12/5/2024' },
-        { package: '@babel/core', current: '7.15.0', current_date: '4/20/2024', latest: '7.23.6', latest_date: '10/30/2024' }
-      ]
-    end
+    # def dummy_npm_versions
+    #   [
+    #     { package: 'jquery', current: '3.7.1', current_date: '4/5/2024', latest: '3.9.1', latest_date: '10/11/2025' },
+    #     { package: 'vue', current: '2.6.12', current_date: '5/15/2024', latest: '3.4.3', latest_date: '11/20/2024' },
+    #     { package: 'webpack', current: '4.46.0', current_date: '3/8/2024', latest: '5.89.0', latest_date: '9/25/2024' },
+    #     { package: 'eslint', current: '7.32.0', current_date: '2/12/2024', latest: '8.56.0', latest_date: '12/5/2024' },
+    #     { package: '@babel/core', current: '7.15.0', current_date: '4/20/2024', latest: '7.23.6', latest_date: '10/30/2024' }
+    #   ]
+    # end
 
     # Fetch gem release date from RubyGems API
     def fetch_gem_release_date(gem_name, version)
