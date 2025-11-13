@@ -98,7 +98,7 @@ module Rubion
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date']
+        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By', 'Versions']
         
         @result.gem_versions.each do |gem|
           t.add_row [
@@ -106,7 +106,9 @@ module Rubion
             gem[:current],
             gem[:current_date] || 'N/A',
             gem[:latest],
-            gem[:latest_date] || 'N/A'
+            gem[:latest_date] || 'N/A',
+            gem[:time_diff] || 'N/A',
+            gem[:version_count] || 'N/A'
           ]
         end
       end
@@ -149,7 +151,7 @@ module Rubion
       end
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date']
+        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By', 'Versions']
         
         @result.package_versions.each do |pkg|
           t.add_row [
@@ -157,7 +159,9 @@ module Rubion
             pkg[:current],
             pkg[:current_date] || 'N/A',
             pkg[:latest],
-            pkg[:latest_date] || 'N/A'
+            pkg[:latest_date] || 'N/A',
+            pkg[:time_diff] || 'N/A',
+            pkg[:version_count] || 'N/A'
           ]
         end
       end
