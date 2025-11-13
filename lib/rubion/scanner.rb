@@ -6,6 +6,7 @@ require_relative 'reporter'
 require 'net/http'
 require 'uri'
 require 'date'
+require 'thread'
 
 module Rubion
   class Scanner
@@ -199,11 +200,18 @@ module Rubion
       
       total = lines_to_process.size
       
-        # Second pass: process with progress counter
-        lines_to_process.each_with_index do |line_data, index|
-          print "\r📦 Checking Ruby gems... #{index + 1}/#{total}"
-          $stdout.flush
-          
+      # Process in parallel with threads (limit to 10 concurrent requests)
+      mutex = Mutex.new
+      thread_pool = []
+      max_threads = 10
+      
+      lines_to_process.each_with_index do |line_data, index|
+        # Wait if we have too many threads
+        if thread_pool.size >= max_threads
+          thread_pool.shift.join
+        end
+        
+        thread = Thread.new do
           # Fetch all version info once per gem (includes dates and version list)
           gem_data = fetch_gem_all_versions(line_data[:gem_name])
           
@@ -217,16 +225,33 @@ module Rubion
           # Count versions between current and latest
           version_count = count_versions_from_list(gem_data[:version_list], line_data[:current_version], line_data[:latest_version])
           
-          versions << {
+          result = {
             gem: line_data[:gem_name],
             current: line_data[:current_version],
             current_date: current_date,
             latest: line_data[:latest_version],
             latest_date: latest_date,
             time_diff: time_diff,
-            version_count: version_count
+            version_count: version_count,
+            index: index
           }
+          
+          mutex.synchronize do
+            versions << result
+            print "\r📦 Checking Ruby gems... #{versions.size}/#{total}"
+            $stdout.flush
+          end
         end
+        
+        thread_pool << thread
+      end
+      
+      # Wait for all threads to complete
+      thread_pool.each(&:join)
+      
+      # Sort by original index to maintain order
+      versions.sort_by! { |v| v[:index] }
+      versions.each { |v| v.delete(:index) }
       
       puts "\r📦 Checking Ruby gems... #{total}/#{total} ✓" if total > 0
       
@@ -282,34 +307,58 @@ module Rubion
         
         total = packages_to_process.size
         
-        # Second pass: process with progress counter
+        # Process in parallel with threads (limit to 10 concurrent requests)
+        mutex = Mutex.new
+        thread_pool = []
+        max_threads = 10
+        
         packages_to_process.each_with_index do |pkg_data, index|
-          print "\r📦 Checking NPM packages... #{index + 1}/#{total}"
-          $stdout.flush
+          # Wait if we have too many threads
+          if thread_pool.size >= max_threads
+            thread_pool.shift.join
+          end
           
-          # Fetch all version info once per package (includes dates and version list)
-          pkg_data_full = fetch_npm_all_versions(pkg_data[:name])
+          thread = Thread.new do
+            # Fetch all version info once per package (includes dates and version list)
+            pkg_data_full = fetch_npm_all_versions(pkg_data[:name])
+            
+            # Extract dates for current and latest versions
+            current_date = pkg_data_full[:versions][pkg_data[:current_version]] || 'N/A'
+            latest_date = pkg_data_full[:versions][pkg_data[:latest_version]] || 'N/A'
+            
+            # Calculate time difference
+            time_diff = calculate_time_difference(current_date, latest_date)
+            
+            # Count versions between current and latest
+            version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version], pkg_data[:latest_version])
+            
+            result = {
+              package: pkg_data[:name],
+              current: pkg_data[:current_version],
+              current_date: current_date,
+              latest: pkg_data[:latest_version],
+              latest_date: latest_date,
+              time_diff: time_diff,
+              version_count: version_count,
+              index: index
+            }
+            
+            mutex.synchronize do
+              versions << result
+              print "\r📦 Checking NPM packages... #{versions.size}/#{total}"
+              $stdout.flush
+            end
+          end
           
-          # Extract dates for current and latest versions
-          current_date = pkg_data_full[:versions][pkg_data[:current_version]] || 'N/A'
-          latest_date = pkg_data_full[:versions][pkg_data[:latest_version]] || 'N/A'
-          
-          # Calculate time difference
-          time_diff = calculate_time_difference(current_date, latest_date)
-          
-          # Count versions between current and latest
-          version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version], pkg_data[:latest_version])
-          
-          versions << {
-            package: pkg_data[:name],
-            current: pkg_data[:current_version],
-            current_date: current_date,
-            latest: pkg_data[:latest_version],
-            latest_date: latest_date,
-            time_diff: time_diff,
-            version_count: version_count
-          }
+          thread_pool << thread
         end
+        
+        # Wait for all threads to complete
+        thread_pool.each(&:join)
+        
+        # Sort by original index to maintain order
+        versions.sort_by! { |v| v[:index] }
+        versions.each { |v| v.delete(:index) }
         
         puts "\r📦 Checking NPM packages... #{total}/#{total} ✓" if total > 0
       end
