@@ -1,0 +1,28 @@
+# Rubocop configuration for Rubion
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 2.6
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'bin/**/*'
+
+Metrics/MethodLength:
+  Max: 25
+  Exclude:
+    - 'lib/rubion/scanner.rb'
+    - 'lib/rubion/reporter.rb'
+
+Metrics/ClassLength:
+  Max: 300
+
+Metrics/AbcSize:
+  Max: 30
+
+Style/Documentation:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+
