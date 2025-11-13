@@ -451,9 +451,13 @@ module Rubion
       return 'N/A' if date1_str == 'N/A' || date2_str == 'N/A'
       
       begin
-        # Parse dates - handle both formats: "%-m/%-d/%Y" (8/13/2025) and "%m/%d/%Y" (08/13/2025)
-        date1 = Date.strptime(date1_str, date1_str.match?(/^\d{1,2}\/\d{1,2}\/\d{4}$/) ? '%m/%d/%Y' : '%-m/%-d/%Y')
-        date2 = Date.strptime(date2_str, date2_str.match?(/^\d{1,2}\/\d{1,2}\/\d{4}$/) ? '%m/%d/%Y' : '%-m/%-d/%Y')
+        # Parse dates - convert "8/13/2025" format to Date object
+        # Split by / and create Date object
+        parts1 = date1_str.split('/').map(&:to_i)
+        parts2 = date2_str.split('/').map(&:to_i)
+        
+        date1 = Date.new(parts1[2], parts1[0], parts1[1])
+        date2 = Date.new(parts2[2], parts2[0], parts2[1])
         
         # Always use the later date minus the earlier date
         diff = (date2 - date1).to_i.abs
