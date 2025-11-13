@@ -2,6 +2,7 @@
 
 require 'json'
 require 'open3'
+require_relative 'reporter'
 require 'net/http'
 require 'uri'
 require 'date'
@@ -28,6 +29,25 @@ module Rubion
       puts "🔍 Scanning project at: #{@project_path}\n\n"
       
       scan_ruby_gems
+      scan_npm_packages
+      
+      @result
+    end
+
+    def scan_incremental
+      puts "🔍 Scanning project at: #{@project_path}\n\n"
+      
+      # Scan and display Ruby gems first
+      scan_ruby_gems
+      
+      # Print gem results immediately
+      puts "\n"
+      reporter = Reporter.new(@result)
+      reporter.print_gem_vulnerabilities
+      reporter.print_gem_versions
+      
+      # Then scan NPM packages
+      puts "\n"
       scan_npm_packages
       
       @result

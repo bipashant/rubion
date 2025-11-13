@@ -10,21 +10,33 @@ module Rubion
 
     def report
       print_header
-      print_gem_vulnerabilities
-      print_gem_versions
-      print_package_vulnerabilities
-      print_package_versions
+      _print_gem_vulnerabilities
+      _print_gem_versions
+      _print_package_vulnerabilities
+      _print_package_versions
       print_summary
+    end
+
+    # Public methods for incremental reporting
+    def print_gem_vulnerabilities
+      _print_gem_vulnerabilities
+    end
+
+    def print_gem_versions
+      _print_gem_versions
+    end
+
+    def print_package_vulnerabilities
+      _print_package_vulnerabilities
+    end
+
+    def print_package_versions
+      _print_package_versions
     end
 
     private
 
-    def print_header
-      # Simplified header
-      puts "\n"
-    end
-
-    def print_gem_vulnerabilities
+    def _print_gem_vulnerabilities
       puts "Gem Vulnerabilities:\n\n"
       
       if @result.gem_vulnerabilities.empty?
@@ -49,7 +61,35 @@ module Rubion
       puts "\n"
     end
 
-    def print_gem_versions
+    def print_header
+      # Simplified header
+      puts "\n"
+    end
+      puts "Gem Vulnerabilities:\n\n"
+      
+      if @result.gem_vulnerabilities.empty?
+        puts "  ✅ No vulnerabilities found!\n\n"
+        return
+      end
+
+      table = Terminal::Table.new do |t|
+        t.headings = ['Level', 'Name', 'Version', 'Vulnerability']
+        
+        @result.gem_vulnerabilities.each do |vuln|
+          t.add_row [
+            severity_with_icon(vuln[:severity]),
+            vuln[:gem],
+            vuln[:version],
+            truncate(vuln[:title], 50)
+          ]
+        end
+      end
+      
+      puts table
+      puts "\n"
+    end
+
+    def _print_gem_versions
       puts "Gem Versions:\n\n"
       
       if @result.gem_versions.empty?
@@ -75,7 +115,7 @@ module Rubion
       puts "\n"
     end
 
-    def print_package_vulnerabilities
+    def _print_package_vulnerabilities
       puts "Package Vulnerabilities:\n\n"
       
       if @result.package_vulnerabilities.empty?
@@ -100,7 +140,7 @@ module Rubion
       puts "\n"
     end
 
-    def print_package_versions
+    def _print_package_versions
       puts "Package Versions:\n\n"
       
       if @result.package_versions.empty?

@@ -29,10 +29,12 @@ module Rubion
       project_path = Dir.pwd
       
       scanner = Scanner.new(project_path: project_path)
-      result = scanner.scan
+      result = scanner.scan_incremental
       
+      # Results are already printed incrementally, just print package results
       reporter = Reporter.new(result)
-      reporter.report
+      reporter.print_package_vulnerabilities
+      reporter.print_package_versions
     end
 
     def self.print_help
