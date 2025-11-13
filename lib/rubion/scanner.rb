@@ -60,7 +60,9 @@ module Rubion
       # Try to use bundler-audit if available
       stdout, stderr, status = Open3.capture3("bundle-audit check 2>&1", chdir: @project_path)
       
-      if status.success? || stdout.include?("vulnerabilities found")
+      # bundle-audit returns exit code 1 when vulnerabilities are found, 0 when none found
+      # Always parse if there's output (vulnerabilities found) or if it succeeded (no vulnerabilities)
+      if stdout.include?("vulnerabilities found") || stdout.include?("Name:") || status.success?
         parse_bundler_audit_output(stdout)
       else
         # No vulnerabilities found or bundler-audit not available
@@ -120,19 +122,36 @@ module Rubion
       current_gem = nil
       
       output.each_line do |line|
+        line = line.strip
+        next if line.empty?
+        
         if line =~ /^Name: (.+)/
           current_gem = { gem: $1.strip }
         elsif line =~ /^Version: (.+)/ && current_gem
           current_gem[:version] = $1.strip
+        elsif line =~ /^CVE: (.+)/ && current_gem
+          current_gem[:advisory] = $1.strip
         elsif line =~ /^Advisory: (.+)/ && current_gem
+          # Fallback for older bundle-audit versions
           current_gem[:advisory] = $1.strip
         elsif line =~ /^Criticality: (.+)/ && current_gem
-          current_gem[:severity] = $1.strip
+          severity = $1.strip
+          # Map "Unknown" to a more standard severity
+          current_gem[:severity] = (severity == "Unknown" ? "Medium" : severity)
         elsif line =~ /^Title: (.+)/ && current_gem
           current_gem[:title] = $1.strip
-          vulnerabilities << current_gem
+          # Only add if we have at least name, version, and title
+          if current_gem[:gem] && current_gem[:version] && current_gem[:title]
+            vulnerabilities << current_gem
+          end
           current_gem = nil
         end
+      end
+      
+      # Handle case where vulnerability block ends without Title (use CVE as title)
+      if current_gem && current_gem[:gem] && current_gem[:version]
+        current_gem[:title] ||= current_gem[:advisory] || "Vulnerability detected"
+        vulnerabilities << current_gem
       end
       
       @result.gem_vulnerabilities = vulnerabilities
