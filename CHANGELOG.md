@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2025-01-14
+
+### Fixed
+- Fixed ArgumentError when using `--exclude-dependencies` flag
+- Reporter initialize method now properly accepts `exclude_dependencies` parameter
+
 ## [0.3.5] - 2025-01-14
 
 ### Added
@@ -169,7 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/yourusername/rubion/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/yourusername/rubion/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/yourusername/rubion/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/yourusername/rubion/compare/v0.3.2...v0.3.3

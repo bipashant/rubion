@@ -4,10 +4,11 @@ require 'terminal-table'
 
 module Rubion
   class Reporter
-    def initialize(scan_result, sort_by: 'Behind By(Time)', sort_desc: true)
+    def initialize(scan_result, sort_by: 'Behind By(Time)', sort_desc: true, exclude_dependencies: false)
       @result = scan_result
       @sort_by = sort_by
       @sort_desc = sort_desc
+      @exclude_dependencies = exclude_dependencies
     end
 
     def report
