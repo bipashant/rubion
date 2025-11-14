@@ -4,8 +4,9 @@ require 'terminal-table'
 
 module Rubion
   class Reporter
-    def initialize(scan_result)
+    def initialize(scan_result, sort_by: nil)
       @result = scan_result
+      @sort_by = sort_by
     end
 
     def report
@@ -35,31 +36,6 @@ module Rubion
     end
 
     private
-
-    def _print_gem_vulnerabilities
-      puts "Gem Vulnerabilities:\n\n"
-
-      if @result.gem_vulnerabilities.empty?
-        puts "  ✅ No vulnerabilities found!\n\n"
-        return
-      end
-
-      table = Terminal::Table.new do |t|
-        t.headings = %w[Level Name Version Vulnerability]
-
-        @result.gem_vulnerabilities.each do |vuln|
-          t.add_row [
-            severity_with_icon(vuln[:severity]),
-            vuln[:gem],
-            vuln[:version],
-            truncate(vuln[:title], 50)
-          ]
-        end
-      end
-
-      puts table
-      puts "\n"
-    end
 
     def print_header
       # Simplified header
@@ -97,10 +73,14 @@ module Rubion
         return
       end
 
+      # Sort if sort_by is specified
+      versions = @result.gem_versions.dup
+      versions = sort_versions(versions, :gem) if @sort_by
+
       table = Terminal::Table.new do |t|
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
 
-        @result.gem_versions.each do |gem|
+        versions.each do |gem|
           t.add_row [
             gem[:gem],
             gem[:current],
@@ -150,10 +130,14 @@ module Rubion
         return
       end
 
-      table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By', 'Versions']
+      # Sort if sort_by is specified
+      versions = @result.package_versions.dup
+      versions = sort_versions(versions, :package) if @sort_by
 
-        @result.package_versions.each do |pkg|
+      table = Terminal::Table.new do |t|
+        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+
+        versions.each do |pkg|
           t.add_row [
             pkg[:package],
             pkg[:current],
@@ -218,7 +202,7 @@ module Rubion
     def truncate(text, length = 50)
       return text if text.length <= length
 
-      "#{text[0..length - 3]}..."
+      "#{text[0..(length - 3)]}..."
     end
 
     def version_difference(current, latest)
@@ -241,6 +225,105 @@ module Rubion
       end
     rescue StandardError
       'unknown'
+    end
+
+    # Sort versions array based on the specified column
+    def sort_versions(versions, name_key)
+      return versions unless @sort_by
+
+      column = @sort_by.strip.downcase
+      name_key_sym = name_key # :gem or :package
+
+      # Normalize column name - default to 'name' if not recognized
+      normalized_column = case column
+                          when 'name', 'current', 'date', 'latest',
+                               'behind by(time)', 'behind by time', 'time',
+                               'behind by(versions)', 'behind by versions', 'versions'
+                            column
+                          else
+                            'name' # Default to name sorting
+                          end
+
+      versions.sort_by do |item|
+        case normalized_column
+        when 'name'
+          item[name_key_sym].to_s.downcase
+        when 'current'
+          parse_version_for_sort(item[:current])
+        when 'date'
+          # Sort by current_date (first Date column)
+          parse_date_for_sort(item[:current_date])
+        when 'latest'
+          parse_version_for_sort(item[:latest])
+        when 'behind by(time)', 'behind by time', 'time'
+          parse_time_for_sort(item[:time_diff])
+        when 'behind by(versions)', 'behind by versions', 'versions'
+          parse_version_count_for_sort(item[:version_count])
+        end
+      end
+    end
+
+    # Parse version string for sorting (handles semantic versions)
+    def parse_version_for_sort(version_str)
+      return [0, 0, 0, ''] if version_str.nil? || version_str == 'N/A' || version_str == 'unknown'
+
+      # Handle version strings like "1.2.3", "1.2.3.4", "1.2.3-beta", etc.
+      parts = version_str.to_s.split(/[.-]/)
+      major = parts[0].to_i
+      minor = parts[1].to_i
+      patch = parts[2].to_i
+      suffix = parts[3..-1].join('') if parts.length > 3
+
+      [major, minor, patch, suffix || '']
+    end
+
+    # Parse date string for sorting (handles M/D/YYYY format)
+    def parse_date_for_sort(date_str)
+      return [0, 0, 0] if date_str.nil? || date_str == 'N/A'
+
+      begin
+        parts = date_str.split('/').map(&:to_i)
+        return [parts[2] || 0, parts[0] || 0, parts[1] || 0] if parts.length == 3
+      rescue StandardError
+        # If parsing fails, return a date that sorts last
+      end
+
+      [0, 0, 0]
+    end
+
+    # Parse time difference string for sorting (e.g., "1 year", "3 months", "5 days")
+    def parse_time_for_sort(time_str)
+      return [0, 0] if time_str.nil? || time_str == 'N/A'
+
+      time_str = time_str.to_s.downcase.strip
+
+      # Extract number and unit
+      match = time_str.match(/(\d+(?:\.\d+)?)\s*(year|month|day|years|months|days)/)
+      return [0, 0] unless match
+
+      value = match[1].to_f
+      unit = match[2].to_s.downcase
+
+      # Convert to days for comparison
+      days = case unit
+             when /year/
+               value * 365
+             when /month/
+               value * 30
+             when /day/
+               value
+             else
+               0
+             end
+
+      [days.to_i, value]
+    end
+
+    # Parse version count for sorting
+    def parse_version_count_for_sort(count)
+      return 0 if count.nil? || count == 'N/A' || count == 'unknown'
+
+      count.to_i
     end
   end
 end

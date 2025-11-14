@@ -37,7 +37,7 @@ module Rubion
       @result
     end
 
-    def scan_incremental(options = { gems: true, packages: true })
+    def scan_incremental(options = { gems: true, packages: true, sort_by: nil })
       puts "🔍 Scanning project at: #{@project_path}\n\n"
       
       # Scan and display Ruby gems first (if enabled)
@@ -46,7 +46,7 @@ module Rubion
         
         # Print gem results immediately
         puts "\n"
-        reporter = Reporter.new(@result)
+        reporter = Reporter.new(@result, sort_by: options[:sort_by])
         reporter.print_gem_vulnerabilities
         reporter.print_gem_versions
       end

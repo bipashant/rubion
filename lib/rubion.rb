@@ -28,7 +28,7 @@ module Rubion
     end
 
     def self.parse_scan_options(args)
-      options = { gems: true, packages: true }
+      options = { gems: true, packages: true, sort_by: nil }
       
       # Check for --gems-only or --packages-only flags
       if args.include?('--gems-only') || args.include?('-g')
@@ -43,20 +43,28 @@ module Rubion
         options[:packages] = args.include?('--packages')
       end
       
+      # Parse --sort-by or -s option
+      sort_index = args.index('--sort-by') || args.index('-s')
+      if sort_index && args[sort_index + 1]
+        options[:sort_by] = args[sort_index + 1]
+      end
+      
       options
     end
 
-    def self.scan(options = { gems: true, packages: true })
+    def self.scan(options = { gems: true, packages: true, sort_by: nil })
       project_path = Dir.pwd
       
       scanner = Scanner.new(project_path: project_path)
       result = scanner.scan_incremental(options)
       
       # Results are already printed incrementally based on options
-      reporter = Reporter.new(result)
-      
-      # Only print package results if packages were scanned
+      # Package results are printed in scan_incremental, but we need to ensure
+      # they use the same reporter instance with sort_by
+      # Actually, scan_incremental handles gem printing, but package printing
+      # happens here, so we need a reporter for packages
       if options[:packages]
+        reporter = Reporter.new(result, sort_by: options[:sort_by])
         reporter.print_package_vulnerabilities
         reporter.print_package_versions
       end
@@ -76,6 +84,7 @@ module Rubion
           --gems, --gem, -g           Scan only Ruby gems (skip NPM packages)
           --packages, --npm, -p       Scan only NPM packages (skip Ruby gems)
           --all, -a                   Scan both gems and packages (default)
+          --sort-by COLUMN, -s COLUMN Sort results by column (Name, Current, Date, Latest, Behind By(Time), Behind By(Versions))
         
         DESCRIPTION:
           Rubion scans your project for:
@@ -100,6 +109,12 @@ module Rubion
           
           # Scan only NPM packages
           rubion scan --packages
+          
+          # Sort by name
+          rubion scan --sort-by Name
+          
+          # Sort by versions behind
+          rubion scan -s "Behind By(Versions)"
           
           # Get help
           rubion help

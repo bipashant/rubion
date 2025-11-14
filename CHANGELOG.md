@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-14
+
+### Added
+- Sorting functionality for version tables with `--sort-by` or `-s` option
+- Support for sorting by: Name, Current, Date, Latest, Behind By(Time), Behind By(Versions)
+- Smart parsing for different column types (semantic versions, dates, time differences, numeric counts)
+- Case-insensitive column name matching with support for variations
+
+### Changed
+- Version tables now support custom sorting based on user preference
+- Improved table display with sorted results
+
 ## [0.3.1] - 2025-01-14
 
 ### Added
@@ -127,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/yourusername/rubion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/yourusername/rubion/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/yourusername/rubion/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/rubion/compare/v0.1.2...v0.2.0
