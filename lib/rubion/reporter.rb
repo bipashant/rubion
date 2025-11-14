@@ -88,7 +88,7 @@ module Rubion
       versions = sort_versions(versions, :gem) if @sort_by
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+        t.headings = format_version_headings
 
         versions.each do |gem|
           # Make direct dependencies bold
@@ -156,7 +156,7 @@ module Rubion
       versions = sort_versions(versions, :package) if @sort_by
 
       table = Terminal::Table.new do |t|
-        t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+        t.headings = format_version_headings
 
         versions.each do |pkg|
           # Make direct dependencies bold
@@ -232,6 +232,38 @@ module Rubion
     # Make text bold using ANSI escape codes
     def bold(text)
       "\033[1m#{text}\033[0m"
+    end
+
+    # Format version table headings with sorting indicator
+    def format_version_headings
+      base_headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+
+      return base_headings unless @sort_by
+
+      # Map sort_by value to column index
+      column_map = {
+        'name' => 0,
+        'current' => 1,
+        'date' => 2, # First Date column (current_date)
+        'latest' => 4,
+        'behind by(time)' => 5,
+        'behind by time' => 5,
+        'time' => 5,
+        'behind by(versions)' => 6,
+        'behind by versions' => 6,
+        'versions' => 6
+      }
+
+      column_name = @sort_by.strip.downcase
+      column_index = column_map[column_name]
+
+      return base_headings unless column_index
+
+      # Add sorting indicator (↑ for ascending, ↓ for descending)
+      indicator = @sort_desc ? ' ↓' : ' ↑'
+      base_headings[column_index] = "#{base_headings[column_index]}#{indicator}"
+
+      base_headings
     end
 
     def version_difference(current, latest)

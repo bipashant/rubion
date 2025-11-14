@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2025-01-14
+
+### Added
+- Sorting indicator icons (↑ for ascending, ↓ for descending) in table headers
+- Visual indication of which column is currently being sorted
+- Improved table readability with sorting direction indicators
+
 ## [0.3.6] - 2025-01-14
 
 ### Fixed
@@ -175,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/yourusername/rubion/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/yourusername/rubion/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/yourusername/rubion/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/yourusername/rubion/compare/v0.3.3...v0.3.4
