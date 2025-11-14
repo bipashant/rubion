@@ -81,8 +81,8 @@ module Rubion
           Rubion scans your project for:
             - Ruby gem vulnerabilities (using bundler-audit)
             - Outdated Ruby gems (using bundle outdated)
-            - NPM package vulnerabilities (using npm audit)
-            - Outdated NPM packages (using npm outdated)
+            - NPM/JavaScript package vulnerabilities (using npm audit or yarn audit)
+            - Outdated NPM/JavaScript packages (using npm outdated or yarn outdated)
         
         OUTPUT:
           Results are displayed in organized tables with:
@@ -107,8 +107,11 @@ module Rubion
         REQUIREMENTS:
           - Ruby 2.6+
           - Bundler (for gem scanning)
-          - NPM (for package scanning, optional)
+          - NPM or Yarn (for package scanning, optional)
           - bundler-audit (optional, install with: gem install bundler-audit)
+          
+        NOTE:
+          If both npm and yarn are available, you will be prompted to choose which one to use.
         
       HELP
     end

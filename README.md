@@ -1,13 +1,13 @@
 # 🔒 Rubion
 
-**Rubion** is a security and version scanner for Ruby and JavaScript projects. It helps you identify vulnerabilities and outdated dependencies in your Ruby gems and NPM packages.
+**Rubion** is a security and version scanner for Ruby and JavaScript projects. It helps you identify vulnerabilities and outdated dependencies in your Ruby gems and NPM/JavaScript packages.
 
 ## Features
 
 - 📛 **Gem Vulnerabilities**: Scans for known security vulnerabilities in Ruby gems using `bundle-audit`
 - 📦 **Gem Versions**: Identifies outdated Ruby gems with release dates and version counts
-- 📛 **Package Vulnerabilities**: Scans for known security vulnerabilities in NPM packages using `npm audit`
-- 📦 **Package Versions**: Identifies outdated NPM packages with release dates and version counts
+- 📛 **Package Vulnerabilities**: Scans for known security vulnerabilities in NPM/JavaScript packages using `npm audit` or `yarn audit`
+- 📦 **Package Versions**: Identifies outdated NPM/JavaScript packages with release dates and version counts
 - 📊 **Beautiful Reports**: Organized table output with severity icons (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low, ⚪ Unknown)
 - 🚀 **Fast & Efficient**: Parallel API processing (10 concurrent threads) for quick results
 - ⚡ **Incremental Output**: Shows gem results immediately, then scans packages
@@ -44,8 +44,8 @@ rubion scan
 This will scan your project for:
 - Ruby gem vulnerabilities (if `Gemfile.lock` exists)
 - Outdated Ruby gems with release dates
-- NPM package vulnerabilities (if `package.json` exists)
-- Outdated NPM packages with release dates
+- NPM/JavaScript package vulnerabilities (if `package.json` exists)
+- Outdated NPM/JavaScript packages with release dates
 
 ### Scan options
 
@@ -126,8 +126,10 @@ Package Versions:
 
 - Ruby 2.6 or higher
 - Bundler (for Ruby gem scanning)
-- NPM (optional, for NPM package scanning)
+- NPM or Yarn (optional, for JavaScript package scanning)
 - `bundler-audit` (optional, for enhanced gem vulnerability detection)
+
+**Note:** If both npm and yarn are available, Rubion will prompt you to choose which one to use.
 
 ### Installing bundler-audit (recommended)
 
@@ -172,10 +174,11 @@ Rubion uses a modular architecture:
 1. **Scanner** (`lib/rubion/scanner.rb`): Executes various commands to scan for vulnerabilities and outdated versions
    - `bundle-audit check` for gem vulnerabilities
    - `bundle outdated --parseable` for gem versions
-   - `npm audit --json` for package vulnerabilities
-   - `npm outdated --json` for package versions
+   - `npm audit --json` or `yarn audit --json` for package vulnerabilities (auto-detects which is available)
+   - `npm outdated --json` or `yarn outdated --json` for package versions (auto-detects which is available)
    - Fetches release dates and version data from RubyGems.org and NPM registry APIs
    - Uses parallel processing (10 concurrent threads) for fast API calls
+   - Prompts user to choose between npm and yarn if both are available
 
 2. **Reporter** (`lib/rubion/reporter.rb`): Formats scan results into beautiful terminal tables using `terminal-table`
    - Adds severity icons (🔴 🟠 🟡 🟢 ⚪)

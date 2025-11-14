@@ -21,9 +21,11 @@ module Rubion
       end
     end
 
-    def initialize(project_path: Dir.pwd)
+    def initialize(project_path: Dir.pwd, package_manager: nil)
       @project_path = project_path
       @result = ScanResult.new
+      @package_manager = package_manager
+      @package_manager_detected = false
     end
 
     def scan
@@ -74,10 +76,21 @@ module Rubion
       package_json = File.join(@project_path, 'package.json')
       return unless File.exist?(package_json)
       
-      # Check for vulnerabilities using npm audit
+      # Detect package manager if not already set
+      unless @package_manager_detected
+        @package_manager = @package_manager || detect_package_manager
+        @package_manager_detected = true
+      end
+      
+      unless @package_manager
+        puts "  ⚠️  Neither npm nor yarn is available. Skipping package scanning."
+        return
+      end
+      
+      # Check for vulnerabilities using package manager audit
       check_npm_vulnerabilities
       
-      # Check for outdated versions using npm outdated (will show progress)
+      # Check for outdated versions using package manager outdated (will show progress)
       check_npm_versions
     end
 
@@ -113,7 +126,10 @@ module Rubion
     end
 
     def check_npm_vulnerabilities
-      stdout, stderr, status = Open3.capture3("npm audit --json 2>&1", chdir: @project_path)
+      return unless @package_manager
+      
+      command = "#{@package_manager} audit --json 2>&1"
+      stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
       
       begin
         data = JSON.parse(stdout)
@@ -122,12 +138,15 @@ module Rubion
         @result.package_vulnerabilities = []
       end
     rescue => e
-      puts "  ⚠️  Could not run npm audit (#{e.message}). Skipping package vulnerability check."
+      puts "  ⚠️  Could not run #{@package_manager} audit (#{e.message}). Skipping package vulnerability check."
       @result.package_vulnerabilities = []
     end
 
     def check_npm_versions
-      stdout, stderr, status = Open3.capture3("npm outdated --json 2>&1", chdir: @project_path)
+      return unless @package_manager
+      
+      command = "#{@package_manager} outdated --json 2>&1"
+      stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
       
       begin
         data = JSON.parse(stdout) unless stdout.empty?
@@ -136,7 +155,7 @@ module Rubion
         @result.package_versions = []
       end
     rescue => e
-      puts "  ⚠️  Could not run npm outdated (#{e.message}). Skipping package version check."
+      puts "  ⚠️  Could not run #{@package_manager} outdated (#{e.message}). Skipping package version check."
       @result.package_versions = []
     end
 
@@ -529,6 +548,48 @@ module Rubion
       rescue => e
         puts "  Debug: Error calculating time diff: #{e.message}" if ENV['DEBUG']
         'N/A'
+      end
+    end
+
+    # Detect which package manager is available (npm or yarn)
+    def detect_package_manager
+      npm_available = check_command_available('npm')
+      yarn_available = check_command_available('yarn')
+      
+      if npm_available && yarn_available
+        # Both available - prompt user
+        prompt_package_manager_choice
+      elsif npm_available
+        'npm'
+      elsif yarn_available
+        'yarn'
+      else
+        nil
+      end
+    end
+    
+    # Check if a command is available in the system
+    def check_command_available(command)
+      _, _, status = Open3.capture3("which #{command} 2>&1")
+      status.success?
+    rescue
+      false
+    end
+    
+    # Prompt user to choose between npm and yarn when both are available
+    def prompt_package_manager_choice
+      puts "\n  Both npm and yarn are available. Which would you like to use?"
+      print "  Enter 'npm' or 'yarn' (default: npm): "
+      
+      choice = $stdin.gets.chomp.strip.downcase
+      
+      if choice.empty? || choice == 'npm'
+        'npm'
+      elsif choice == 'yarn'
+        'yarn'
+      else
+        puts "  ⚠️  Invalid choice. Using npm as default."
+        'npm'
       end
     end
 
