@@ -148,17 +148,43 @@ module Rubion
     def check_npm_versions
       return unless @package_manager
 
-      command = "#{@package_manager} outdated --json 2>&1"
+      # Yarn v1 doesn't support --json flag, so handle it differently
+      if @package_manager == 'yarn'
+        check_yarn_outdated
+      else
+        check_npm_outdated
+      end
+    end
+
+    def check_npm_outdated
+      command = 'npm outdated --json 2>&1'
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
 
       begin
         data = JSON.parse(stdout) unless stdout.empty?
         parse_npm_outdated_output(data || {})
-      rescue JSON::ParserError
+      rescue JSON::ParserError => e
+        puts "  ⚠️  Error parsing npm outdated JSON output: #{e.message}"
         @result.package_versions = []
       end
     rescue StandardError => e
-      puts "  ⚠️  Could not run #{@package_manager} outdated (#{e.message}). Skipping package version check."
+      puts "  ⚠️  Could not run npm outdated (#{e.message}). Skipping package version check."
+      @result.package_versions = []
+    end
+
+    def check_yarn_outdated
+      # Yarn v1 doesn't support --json, so parse text output
+      command = 'yarn outdated 2>&1'
+      stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
+
+      begin
+        parse_yarn_outdated_output(stdout)
+      rescue StandardError => e
+        puts "  ⚠️  Could not parse yarn outdated output (#{e.message}). Skipping package version check."
+        @result.package_versions = []
+      end
+    rescue StandardError => e
+      puts "  ⚠️  Could not run yarn outdated (#{e.message}). Skipping package version check."
       @result.package_versions = []
     end
 
@@ -393,6 +419,104 @@ module Rubion
     rescue StandardError => e
       puts "  ⚠️  Error parsing npm outdated data: #{e.message}"
       @result.package_versions = []
+    end
+
+    def parse_yarn_outdated_output(output)
+      versions = []
+      packages_to_process = []
+
+      # Yarn v1 outdated output format:
+      # Package Name    Current Wanted Latest
+      # package-name    1.0.0   1.0.0  2.0.0
+      # Skip header lines and parse package info
+      output.each_line do |line|
+        line = line.strip
+        next if line.empty?
+        next if line.start_with?('Package') || line.start_with?('yarn') || line.start_with?('Done')
+        next if line.include?('─') # Skip separator lines
+
+        # Parse format: package-name    current    wanted    latest    location
+        # Or: package-name    current    wanted    latest
+        parts = line.split(/\s+/)
+        next if parts.length < 4
+
+        package_name = parts[0]
+        current_version = parts[1]
+        latest_version = parts[3] # Skip wanted (parts[2]), use latest
+
+        # Skip if versions are the same (not outdated)
+        next if current_version == latest_version
+
+        packages_to_process << {
+          name: package_name,
+          current_version: current_version,
+          latest_version: latest_version
+        }
+      end
+
+      total = packages_to_process.size
+
+      return if total == 0
+
+      # Process in parallel with threads (limit to 10 concurrent requests)
+      mutex = Mutex.new
+      thread_pool = []
+      max_threads = 10
+
+      packages_to_process.each_with_index do |pkg_data, index|
+        # Wait if we have too many threads
+        thread_pool.shift.join if thread_pool.size >= max_threads
+
+        thread = Thread.new do
+          # Fetch all version info once per package (includes dates and version list)
+          pkg_data_full = fetch_npm_all_versions(pkg_data[:name])
+
+          # Extract dates for current and latest versions
+          current_date = pkg_data_full[:versions][pkg_data[:current_version]] || 'N/A'
+          latest_date = pkg_data_full[:versions][pkg_data[:latest_version]] || 'N/A'
+
+          # Calculate time difference
+          time_diff = calculate_time_difference(current_date, latest_date)
+
+          # Count versions between current and latest
+          version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version],
+                                                   pkg_data[:latest_version])
+
+          # Check if this is a direct dependency
+          direct_dependency = is_direct_package?(pkg_data[:name])
+
+          result = {
+            package: pkg_data[:name],
+            current: pkg_data[:current_version],
+            current_date: current_date,
+            latest: pkg_data[:latest_version],
+            latest_date: latest_date,
+            time_diff: time_diff,
+            version_count: version_count,
+            direct: direct_dependency,
+            index: index
+          }
+
+          mutex.synchronize do
+            versions << result
+            print "\r📦 Checking NPM packages... #{versions.size}/#{total}"
+            $stdout.flush
+          end
+        end
+
+        thread_pool << thread
+      end
+
+      # Wait for all threads to complete
+      thread_pool.each(&:join)
+
+      # Sort by original index to maintain order
+      versions.sort_by! { |v| v[:index] }
+      versions.each { |v| v.delete(:index) }
+
+      puts "\r📦 Checking NPM packages... #{total}/#{total} ✓" if total > 0
+
+      @result.package_versions = versions
     end
 
     # Dummy data for demonstration (commented out - only show real data)
