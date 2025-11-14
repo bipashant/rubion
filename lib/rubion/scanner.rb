@@ -579,13 +579,13 @@ module Rubion
     # Prompt user to choose between npm and yarn when both are available
     def prompt_package_manager_choice
       puts "\n  Both npm and yarn are available. Which would you like to use?"
-      print "  Enter 'npm' or 'yarn' (default: npm): "
+      print "  Enter 'n' for npm or 'y' for yarn (default: npm): "
       
       choice = $stdin.gets.chomp.strip.downcase
       
-      if choice.empty? || choice == 'npm'
+      if choice.empty? || choice == 'n' || choice == 'npm'
         'npm'
-      elsif choice == 'yarn'
+      elsif choice == 'y' || choice == 'yarn'
         'yarn'
       else
         puts "  ⚠️  Invalid choice. Using npm as default."
