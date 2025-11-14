@@ -28,7 +28,8 @@ module Rubion
     end
 
     def self.parse_scan_options(args)
-      options = { gems: true, packages: true, sort_by: nil }
+      # Default to sorting by "Behind By(Time)" in descending order
+      options = { gems: true, packages: true, sort_by: "Behind By(Time)", sort_desc: true }
       
       # Check for --gems-only or --packages-only flags
       if args.include?('--gems-only') || args.include?('-g')
@@ -49,10 +50,13 @@ module Rubion
         options[:sort_by] = args[sort_index + 1]
       end
       
+      # Parse --asc or --ascending for ascending order (descending is default)
+      options[:sort_desc] = false if args.include?('--asc') || args.include?('--ascending')
+      
       options
     end
 
-    def self.scan(options = { gems: true, packages: true, sort_by: nil })
+    def self.scan(options = { gems: true, packages: true, sort_by: "Behind By(Time)", sort_desc: true })
       project_path = Dir.pwd
       
       scanner = Scanner.new(project_path: project_path)
@@ -64,7 +68,7 @@ module Rubion
       # Actually, scan_incremental handles gem printing, but package printing
       # happens here, so we need a reporter for packages
       if options[:packages]
-        reporter = Reporter.new(result, sort_by: options[:sort_by])
+        reporter = Reporter.new(result, sort_by: options[:sort_by], sort_desc: options[:sort_desc])
         reporter.print_package_vulnerabilities
         reporter.print_package_versions
       end
@@ -85,6 +89,8 @@ module Rubion
           --packages, --npm, -p       Scan only NPM packages (skip Ruby gems)
           --all, -a                   Scan both gems and packages (default)
           --sort-by COLUMN, -s COLUMN Sort results by column (Name, Current, Date, Latest, Behind By(Time), Behind By(Versions))
+                                     (default: "Behind By(Time)" in descending order)
+          --asc, --ascending          Sort in ascending order (use with --sort-by)
         
         DESCRIPTION:
           Rubion scans your project for:
@@ -115,6 +121,12 @@ module Rubion
           
           # Sort by versions behind
           rubion scan -s "Behind By(Versions)"
+          
+          # Sort by name in descending order (default)
+          rubion scan --sort-by Name
+          
+          # Sort by name in ascending order
+          rubion scan --sort-by Name --asc
           
           # Get help
           rubion help

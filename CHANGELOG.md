@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2025-01-14
+
+### Changed
+- Default sort is now "Behind By(Time)" in descending order (most outdated items first)
+- Sorting now defaults to descending order for all columns
+- Added `--asc` or `--ascending` flag to sort in ascending order when needed
+
 ## [0.3.2] - 2025-01-14
 
 ### Added
@@ -139,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/yourusername/rubion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/yourusername/rubion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/yourusername/rubion/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/yourusername/rubion/compare/v0.2.0...v0.3.0

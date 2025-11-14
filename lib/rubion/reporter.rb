@@ -4,9 +4,10 @@ require 'terminal-table'
 
 module Rubion
   class Reporter
-    def initialize(scan_result, sort_by: nil)
+    def initialize(scan_result, sort_by: 'Behind By(Time)', sort_desc: true)
       @result = scan_result
       @sort_by = sort_by
+      @sort_desc = sort_desc
     end
 
     def report
@@ -244,7 +245,7 @@ module Rubion
                             'name' # Default to name sorting
                           end
 
-      versions.sort_by do |item|
+      sorted = versions.sort_by do |item|
         case normalized_column
         when 'name'
           item[name_key_sym].to_s.downcase
@@ -261,6 +262,9 @@ module Rubion
           parse_version_count_for_sort(item[:version_count])
         end
       end
+
+      # Reverse if descending order requested
+      @sort_desc ? sorted.reverse : sorted
     end
 
     # Parse version string for sorting (handles semantic versions)
