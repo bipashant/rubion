@@ -74,16 +74,24 @@ module Rubion
         return
       end
 
-      # Sort if sort_by is specified
+      # Filter to only direct dependencies if flag is set
       versions = @result.gem_versions.dup
+      versions = versions.select { |gem| gem[:direct] } if @exclude_dependencies
+
+      if versions.empty?
+        puts "  ✅ No direct dependencies found!\n\n"
+        return
+      end
+
+      # Sort if sort_by is specified
       versions = sort_versions(versions, :gem) if @sort_by
 
       table = Terminal::Table.new do |t|
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
 
         versions.each do |gem|
-          # Add ✅ prefix for direct dependencies
-          gem_name = gem[:direct] ? "#{gem[:gem]} ✅ " : gem[:gem]
+          # Make direct dependencies bold
+          gem_name = gem[:direct] ? bold(gem[:gem]) : gem[:gem]
 
           t.add_row [
             gem_name,
@@ -134,16 +142,24 @@ module Rubion
         return
       end
 
-      # Sort if sort_by is specified
+      # Filter to only direct dependencies if flag is set
       versions = @result.package_versions.dup
+      versions = versions.select { |pkg| pkg[:direct] } if @exclude_dependencies
+
+      if versions.empty?
+        puts "  ✅ No direct dependencies found!\n\n"
+        return
+      end
+
+      # Sort if sort_by is specified
       versions = sort_versions(versions, :package) if @sort_by
 
       table = Terminal::Table.new do |t|
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
 
         versions.each do |pkg|
-          # Add ✅ prefix for direct dependencies
-          package_name = pkg[:direct] ? "✅ #{pkg[:package]}" : pkg[:package]
+          # Make direct dependencies bold
+          package_name = pkg[:direct] ? bold(pkg[:package]) : pkg[:package]
 
           t.add_row [
             package_name,
@@ -212,6 +228,11 @@ module Rubion
       "#{text[0..(length - 3)]}..."
     end
 
+    # Make text bold using ANSI escape codes
+    def bold(text)
+      "\033[1m#{text}\033[0m"
+    end
+
     def version_difference(current, latest)
       # Simple version difference calculation
       current_parts = current.split('.').map(&:to_i)
@@ -254,9 +275,9 @@ module Rubion
       sorted = versions.sort_by do |item|
         case normalized_column
         when 'name'
-          # Remove ✅ prefix for sorting
+          # Remove ANSI codes for sorting
           name = item[name_key_sym].to_s
-          name = name.sub(/^✅\s+/, '') if name.start_with?('✅')
+          name = name.gsub(/\033\[[0-9;]*m/, '') # Remove ANSI escape codes
           name.downcase
         when 'current'
           parse_version_for_sort(item[:current])

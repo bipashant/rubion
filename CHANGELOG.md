@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2025-01-14
+
+### Added
+- `--exclude-dependencies` flag to show only direct dependencies (from Gemfile/package.json)
+- Bold text highlighting for direct dependencies (replaces ✅ prefix)
+- Filter functionality to exclude transitive dependencies from results
+
+### Changed
+- Direct dependencies now displayed in bold text instead of ✅ prefix
+- Improved visual distinction between direct and transitive dependencies
+
 ## [0.3.4] - 2025-01-14
 
 ### Added
@@ -158,7 +169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/yourusername/rubion/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/yourusername/rubion/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/yourusername/rubion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/yourusername/rubion/compare/v0.3.1...v0.3.2
