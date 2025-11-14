@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2025-01-14
+
+### Changed
+- Renamed "Date" columns to be more descriptive
+- First Date column now shows as "Current version released on"
+- Second Date column now shows as "Latest version released on"
+- Improved table readability with clearer column names
+
 ## [0.3.9] - 2025-01-14
 
 ### Fixed
@@ -199,7 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/yourusername/rubion/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/yourusername/rubion/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/yourusername/rubion/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/yourusername/rubion/compare/v0.3.6...v0.3.7

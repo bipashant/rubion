@@ -236,7 +236,8 @@ module Rubion
 
     # Format version table headings with sorting indicator
     def format_version_headings
-      base_headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
+      base_headings = ['Name', 'Current', 'Current version released on', 'Latest', 'Latest version released on',
+                       'Behind By(Time)', 'Behind By(Versions)']
 
       return base_headings unless @sort_by
 
@@ -245,7 +246,9 @@ module Rubion
         'name' => 0,
         'current' => 1,
         'date' => 2, # First Date column (current_date)
+        'current version released on' => 2,
         'latest' => 4,
+        'latest version released on' => 4,
         'behind by(time)' => 5,
         'behind by time' => 5,
         'time' => 5,
