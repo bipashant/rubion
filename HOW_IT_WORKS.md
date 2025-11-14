@@ -144,3 +144,5 @@ Rubion scans your project by:
 - If parsing fails → shows warning and uses empty data
 - All errors are gracefully handled without crashing the scan
 
+
+

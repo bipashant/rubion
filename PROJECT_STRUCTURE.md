@@ -232,3 +232,5 @@ To add new scanners (e.g., Python pip, PHP composer):
 
 **Ready to scan! 🔒**
 
+
+
