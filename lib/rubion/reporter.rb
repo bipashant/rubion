@@ -82,8 +82,11 @@ module Rubion
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
 
         versions.each do |gem|
+          # Add ✅ prefix for direct dependencies
+          gem_name = gem[:direct] ? "#{gem[:gem]} ✅ " : gem[:gem]
+
           t.add_row [
-            gem[:gem],
+            gem_name,
             gem[:current],
             gem[:current_date] || 'N/A',
             gem[:latest],
@@ -139,8 +142,11 @@ module Rubion
         t.headings = ['Name', 'Current', 'Date', 'Latest', 'Date', 'Behind By(Time)', 'Behind By(Versions)']
 
         versions.each do |pkg|
+          # Add ✅ prefix for direct dependencies
+          package_name = pkg[:direct] ? "✅ #{pkg[:package]}" : pkg[:package]
+
           t.add_row [
-            pkg[:package],
+            package_name,
             pkg[:current],
             pkg[:current_date] || 'N/A',
             pkg[:latest],
@@ -248,7 +254,10 @@ module Rubion
       sorted = versions.sort_by do |item|
         case normalized_column
         when 'name'
-          item[name_key_sym].to_s.downcase
+          # Remove ✅ prefix for sorting
+          name = item[name_key_sym].to_s
+          name = name.sub(/^✅\s+/, '') if name.start_with?('✅')
+          name.downcase
         when 'current'
           parse_version_for_sort(item[:current])
         when 'date'

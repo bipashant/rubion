@@ -6,7 +6,6 @@ require_relative 'reporter'
 require 'net/http'
 require 'uri'
 require 'date'
-require 'thread'
 
 module Rubion
   class Scanner
@@ -26,37 +25,39 @@ module Rubion
       @result = ScanResult.new
       @package_manager = package_manager
       @package_manager_detected = false
+      @direct_gems = nil
+      @direct_packages = nil
     end
 
     def scan
       puts "🔍 Scanning project at: #{@project_path}\n\n"
-      
+
       scan_ruby_gems
       scan_npm_packages
-      
+
       @result
     end
 
-    def scan_incremental(options = { gems: true, packages: true, sort_by: "Behind By(Time)", sort_desc: true })
+    def scan_incremental(options = { gems: true, packages: true, sort_by: 'Behind By(Time)', sort_desc: true })
       puts "🔍 Scanning project at: #{@project_path}\n\n"
-      
+
       # Scan and display Ruby gems first (if enabled)
       if options[:gems]
         scan_ruby_gems
-        
+
         # Print gem results immediately
         puts "\n"
         reporter = Reporter.new(@result, sort_by: options[:sort_by], sort_desc: options[:sort_desc])
         reporter.print_gem_vulnerabilities
         reporter.print_gem_versions
       end
-      
+
       # Then scan NPM packages (if enabled)
       if options[:packages]
-        puts "\n" if options[:gems]  # Add spacing if gems were scanned
+        puts "\n" if options[:gems] # Add spacing if gems were scanned
         scan_npm_packages
       end
-      
+
       @result
     end
 
@@ -64,10 +65,10 @@ module Rubion
 
     def scan_ruby_gems
       return unless File.exist?(File.join(@project_path, 'Gemfile.lock'))
-      
+
       # Check for vulnerabilities using bundler-audit
       check_gem_vulnerabilities
-      
+
       # Check for outdated versions using bundle outdated (will show progress)
       check_gem_versions
     end
@@ -75,86 +76,86 @@ module Rubion
     def scan_npm_packages
       package_json = File.join(@project_path, 'package.json')
       return unless File.exist?(package_json)
-      
+
       # Detect package manager if not already set
       unless @package_manager_detected
-        @package_manager = @package_manager || detect_package_manager
+        @package_manager ||= detect_package_manager
         @package_manager_detected = true
       end
-      
+
       unless @package_manager
-        puts "  ⚠️  Neither npm nor yarn is available. Skipping package scanning."
+        puts '  ⚠️  Neither npm nor yarn is available. Skipping package scanning.'
         return
       end
-      
+
       # Check for vulnerabilities using package manager audit
       check_npm_vulnerabilities
-      
+
       # Check for outdated versions using package manager outdated (will show progress)
       check_npm_versions
     end
 
     def check_gem_vulnerabilities
       # Try to use bundler-audit if available
-      stdout, stderr, status = Open3.capture3("bundle-audit check 2>&1", chdir: @project_path)
-      
+      stdout, stderr, status = Open3.capture3('bundle-audit check 2>&1', chdir: @project_path)
+
       # bundle-audit returns exit code 1 when vulnerabilities are found, 0 when none found
       # Always parse if there's output (vulnerabilities found) or if it succeeded (no vulnerabilities)
-      if stdout.include?("vulnerabilities found") || stdout.include?("Name:") || status.success?
+      if stdout.include?('vulnerabilities found') || stdout.include?('Name:') || status.success?
         parse_bundler_audit_output(stdout)
       else
         # No vulnerabilities found or bundler-audit not available
         @result.gem_vulnerabilities = []
       end
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Could not run bundle-audit (#{e.message}). Skipping gem vulnerability check."
       @result.gem_vulnerabilities = []
     end
 
     def check_gem_versions
-      stdout, stderr, status = Open3.capture3("bundle outdated --parseable", chdir: @project_path)
-      
+      stdout, stderr, status = Open3.capture3('bundle outdated --parseable', chdir: @project_path)
+
       if status.success? || !stdout.empty?
         parse_bundle_outdated_output(stdout)
       else
         # No outdated gems found
         @result.gem_versions = []
       end
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Could not run bundle outdated (#{e.message}). Skipping gem version check."
       @result.gem_versions = []
     end
 
     def check_npm_vulnerabilities
       return unless @package_manager
-      
+
       command = "#{@package_manager} audit --json 2>&1"
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
-      
+
       begin
         data = JSON.parse(stdout)
         parse_npm_audit_output(data)
       rescue JSON::ParserError
         @result.package_vulnerabilities = []
       end
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Could not run #{@package_manager} audit (#{e.message}). Skipping package vulnerability check."
       @result.package_vulnerabilities = []
     end
 
     def check_npm_versions
       return unless @package_manager
-      
+
       command = "#{@package_manager} outdated --json 2>&1"
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
-      
+
       begin
         data = JSON.parse(stdout) unless stdout.empty?
         parse_npm_outdated_output(data || {})
       rescue JSON::ParserError
         @result.package_versions = []
       end
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Could not run #{@package_manager} outdated (#{e.message}). Skipping package version check."
       @result.package_versions = []
     end
@@ -164,86 +165,86 @@ module Rubion
     def parse_bundler_audit_output(output)
       vulnerabilities = []
       current_gem = nil
-      
+
       output.each_line do |line|
         line = line.strip
         next if line.empty?
-        
+
         if line =~ /^Name: (.+)/
-          current_gem = { gem: $1.strip }
+          current_gem = { gem: ::Regexp.last_match(1).strip }
         elsif line =~ /^Version: (.+)/ && current_gem
-          current_gem[:version] = $1.strip
+          current_gem[:version] = ::Regexp.last_match(1).strip
         elsif line =~ /^CVE: (.+)/ && current_gem
-          current_gem[:advisory] = $1.strip
+          current_gem[:advisory] = ::Regexp.last_match(1).strip
         elsif line =~ /^Advisory: (.+)/ && current_gem
           # Fallback for older bundle-audit versions
-          current_gem[:advisory] = $1.strip
+          current_gem[:advisory] = ::Regexp.last_match(1).strip
         elsif line =~ /^Criticality: (.+)/ && current_gem
-          current_gem[:severity] = $1.strip
+          current_gem[:severity] = ::Regexp.last_match(1).strip
         elsif line =~ /^Title: (.+)/ && current_gem
-          current_gem[:title] = $1.strip
+          current_gem[:title] = ::Regexp.last_match(1).strip
           # Only add if we have at least name, version, and title
-          if current_gem[:gem] && current_gem[:version] && current_gem[:title]
-            vulnerabilities << current_gem
-          end
+          vulnerabilities << current_gem if current_gem[:gem] && current_gem[:version] && current_gem[:title]
           current_gem = nil
         end
       end
-      
+
       # Handle case where vulnerability block ends without Title (use CVE as title)
       if current_gem && current_gem[:gem] && current_gem[:version]
-        current_gem[:title] ||= current_gem[:advisory] || "Vulnerability detected"
+        current_gem[:title] ||= current_gem[:advisory] || 'Vulnerability detected'
         vulnerabilities << current_gem
       end
-      
+
       @result.gem_vulnerabilities = vulnerabilities
     end
 
     def parse_bundle_outdated_output(output)
       versions = []
       lines_to_process = []
-      
+
       # First pass: collect all lines to process
       output.each_line do |line|
         next if line.strip.empty?
-        
+
         # Parse format: gem_name (newest version, installed version, requested version)
-        if line =~ /^(.+?)\s+\(newest\s+(.+?),\s+installed\s+(.+?)(?:,|\))/
-          lines_to_process << {
-            gem_name: $1.strip,
-            current_version: $3.strip,
-            latest_version: $2.strip
-          }
-        end
+        next unless line =~ /^(.+?)\s+\(newest\s+(.+?),\s+installed\s+(.+?)(?:,|\))/
+
+        lines_to_process << {
+          gem_name: ::Regexp.last_match(1).strip,
+          current_version: ::Regexp.last_match(3).strip,
+          latest_version: ::Regexp.last_match(2).strip
+        }
       end
-      
+
       total = lines_to_process.size
-      
+
       # Process in parallel with threads (limit to 10 concurrent requests)
       mutex = Mutex.new
       thread_pool = []
       max_threads = 10
-      
+
       lines_to_process.each_with_index do |line_data, index|
         # Wait if we have too many threads
-        if thread_pool.size >= max_threads
-          thread_pool.shift.join
-        end
-        
+        thread_pool.shift.join if thread_pool.size >= max_threads
+
         thread = Thread.new do
           # Fetch all version info once per gem (includes dates and version list)
           gem_data = fetch_gem_all_versions(line_data[:gem_name])
-          
+
           # Extract dates for current and latest versions
           current_date = gem_data[:versions][line_data[:current_version]] || 'N/A'
           latest_date = gem_data[:versions][line_data[:latest_version]] || 'N/A'
-          
+
           # Calculate time difference
           time_diff = calculate_time_difference(current_date, latest_date)
-          
+
           # Count versions between current and latest
-          version_count = count_versions_from_list(gem_data[:version_list], line_data[:current_version], line_data[:latest_version])
-          
+          version_count = count_versions_from_list(gem_data[:version_list], line_data[:current_version],
+                                                   line_data[:latest_version])
+
+          # Check if this is a direct dependency
+          direct_dependency = is_direct_gem?(line_data[:gem_name])
+
           result = {
             gem: line_data[:gem_name],
             current: line_data[:current_version],
@@ -252,38 +253,39 @@ module Rubion
             latest_date: latest_date,
             time_diff: time_diff,
             version_count: version_count,
+            direct: direct_dependency,
             index: index
           }
-          
+
           mutex.synchronize do
             versions << result
             print "\r📦 Checking Ruby gems... #{versions.size}/#{total}"
             $stdout.flush
           end
         end
-        
+
         thread_pool << thread
       end
-      
+
       # Wait for all threads to complete
       thread_pool.each(&:join)
-      
+
       # Sort by original index to maintain order
       versions.sort_by! { |v| v[:index] }
       versions.each { |v| v.delete(:index) }
-      
+
       puts "\r📦 Checking Ruby gems... #{total}/#{total} ✓" if total > 0
-      
+
       @result.gem_versions = versions
     end
 
     def parse_npm_audit_output(data)
       vulnerabilities = []
-      
+
       if data['vulnerabilities'] && data['vulnerabilities'].is_a?(Hash)
         data['vulnerabilities'].each do |name, info|
           next unless info.is_a?(Hash)
-          
+
           # Extract title from via array
           title = 'Vulnerability detected'
           if info['via'].is_a?(Array) && info['via'].first.is_a?(Hash)
@@ -291,7 +293,7 @@ module Rubion
           elsif info['via'].is_a?(String)
             title = info['via']
           end
-          
+
           vulnerabilities << {
             package: name,
             version: info['range'] || info['version'] || 'unknown',
@@ -300,57 +302,59 @@ module Rubion
           }
         end
       end
-      
+
       @result.package_vulnerabilities = vulnerabilities
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Error parsing npm audit data: #{e.message}"
       @result.package_vulnerabilities = []
     end
 
     def parse_npm_outdated_output(data)
       versions = []
-      
+
       if data.is_a?(Hash)
         packages_to_process = []
-        
+
         # First pass: collect all packages to process
         data.each do |name, info|
           next unless info.is_a?(Hash)
-          
+
           packages_to_process << {
             name: name,
             current_version: info['current'] || 'unknown',
             latest_version: info['latest'] || 'unknown'
           }
         end
-        
+
         total = packages_to_process.size
-        
+
         # Process in parallel with threads (limit to 10 concurrent requests)
         mutex = Mutex.new
         thread_pool = []
         max_threads = 10
-        
+
         packages_to_process.each_with_index do |pkg_data, index|
           # Wait if we have too many threads
-          if thread_pool.size >= max_threads
-            thread_pool.shift.join
-          end
-          
+          thread_pool.shift.join if thread_pool.size >= max_threads
+
           thread = Thread.new do
             # Fetch all version info once per package (includes dates and version list)
             pkg_data_full = fetch_npm_all_versions(pkg_data[:name])
-            
+
             # Extract dates for current and latest versions
             current_date = pkg_data_full[:versions][pkg_data[:current_version]] || 'N/A'
             latest_date = pkg_data_full[:versions][pkg_data[:latest_version]] || 'N/A'
-            
+
             # Calculate time difference
             time_diff = calculate_time_difference(current_date, latest_date)
-            
+
             # Count versions between current and latest
-            version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version], pkg_data[:latest_version])
-            
+            version_count = count_versions_from_list(pkg_data_full[:version_list], pkg_data[:current_version],
+                                                     pkg_data[:latest_version])
+
+            # Check if this is a direct dependency
+            direct_dependency = is_direct_package?(pkg_data[:name])
+
             result = {
               package: pkg_data[:name],
               current: pkg_data[:current_version],
@@ -359,31 +363,32 @@ module Rubion
               latest_date: latest_date,
               time_diff: time_diff,
               version_count: version_count,
+              direct: direct_dependency,
               index: index
             }
-            
+
             mutex.synchronize do
               versions << result
               print "\r📦 Checking NPM packages... #{versions.size}/#{total}"
               $stdout.flush
             end
           end
-          
+
           thread_pool << thread
         end
-        
+
         # Wait for all threads to complete
         thread_pool.each(&:join)
-        
+
         # Sort by original index to maintain order
         versions.sort_by! { |v| v[:index] }
         versions.each { |v| v.delete(:index) }
-        
+
         puts "\r📦 Checking NPM packages... #{total}/#{total} ✓" if total > 0
       end
-      
+
       @result.package_versions = versions
-    rescue => e
+    rescue StandardError => e
       puts "  ⚠️  Error parsing npm outdated data: #{e.message}"
       @result.package_versions = []
     end
@@ -463,27 +468,27 @@ module Rubion
     # Fetch all gem version info (dates and version list) from RubyGems API in one call
     def fetch_gem_all_versions(gem_name)
       return { versions: {}, version_list: [] } if gem_name.nil?
-      
+
       uri = URI("https://rubygems.org/api/v1/versions/#{gem_name}.json")
-      
+
       # Set timeout to avoid hanging
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Skip SSL verification
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE # Skip SSL verification
       http.open_timeout = 2
       http.read_timeout = 3
-      
+
       request = Net::HTTP::Get.new(uri.request_uri)
       response = http.request(request)
-      
+
       return { versions: {}, version_list: [] } unless response.is_a?(Net::HTTPSuccess)
-      
+
       all_versions = JSON.parse(response.body)
-      
+
       # Build hash of version => date
       version_dates = {}
       version_list = []
-      
+
       all_versions.each do |v|
         version_num = v['number']
         if v['created_at']
@@ -494,9 +499,9 @@ module Rubion
         end
         version_list << version_num
       end
-      
+
       { versions: version_dates, version_list: version_list }
-    rescue => e
+    rescue StandardError => e
       puts "  Debug: Error fetching versions for #{gem_name}: #{e.message}" if ENV['DEBUG']
       { versions: {}, version_list: [] }
     end
@@ -505,13 +510,13 @@ module Rubion
     def count_versions_from_list(version_list, current_version, latest_version)
       return 'N/A' if current_version == 'unknown' || latest_version == 'unknown' || version_list.empty?
       return 0 if current_version == latest_version
-      
+
       # Find indices of current and latest versions
       current_idx = version_list.index(current_version)
       latest_idx = version_list.index(latest_version)
-      
+
       return 'N/A' if current_idx.nil? || latest_idx.nil?
-      
+
       # Count versions between (exclusive of current, inclusive of latest)
       (latest_idx - current_idx).abs
     end
@@ -519,33 +524,33 @@ module Rubion
     # Calculate time difference between two dates
     def calculate_time_difference(date1_str, date2_str)
       return 'N/A' if date1_str == 'N/A' || date2_str == 'N/A'
-      
+
       begin
         # Parse dates - convert "8/13/2025" format to Date object
         # Split by / and create Date object
         parts1 = date1_str.split('/').map(&:to_i)
         parts2 = date2_str.split('/').map(&:to_i)
-        
+
         date1 = Date.new(parts1[2], parts1[0], parts1[1])
         date2 = Date.new(parts2[2], parts2[0], parts2[1])
-        
+
         # Always use the later date minus the earlier date
         diff = (date2 - date1).to_i.abs
-        
+
         if diff < 30
-          "#{diff} day#{diff != 1 ? 's' : ''}"
+          "#{diff} day#{'s' if diff != 1}"
         elsif diff < 365
           months = (diff / 30.0).round
-          "#{months} month#{months != 1 ? 's' : ''}"
+          "#{months} month#{'s' if months != 1}"
         else
           years = (diff / 365.0).round(1)
           if years == years.to_i
-            "#{years.to_i} year#{years.to_i != 1 ? 's' : ''}"
+            "#{years.to_i} year#{'s' if years.to_i != 1}"
           else
             "#{years} years"
           end
         end
-      rescue => e
+      rescue StandardError => e
         puts "  Debug: Error calculating time diff: #{e.message}" if ENV['DEBUG']
         'N/A'
       end
@@ -555,7 +560,7 @@ module Rubion
     def detect_package_manager
       npm_available = check_command_available('npm')
       yarn_available = check_command_available('yarn')
-      
+
       if npm_available && yarn_available
         # Both available - prompt user
         prompt_package_manager_choice
@@ -567,28 +572,81 @@ module Rubion
         nil
       end
     end
-    
+
     # Check if a command is available in the system
     def check_command_available(command)
       _, _, status = Open3.capture3("which #{command} 2>&1")
       status.success?
-    rescue
+    rescue StandardError
       false
     end
-    
+
+    # Parse Gemfile to get direct dependencies
+    def parse_gemfile
+      return @direct_gems if @direct_gems
+
+      gemfile_path = File.join(@project_path, 'Gemfile')
+      return [] unless File.exist?(gemfile_path)
+
+      direct_gems = []
+      content = File.read(gemfile_path)
+
+      # Match gem declarations: gem 'name', gem "name", gem('name'), gem("name")
+      # Also handle version constraints and options
+      content.scan(/^\s*gem\s+['"]([^'"]+)['"]/) do |match|
+        gem_name = match[0]
+        direct_gems << gem_name unless gem_name.nil?
+      end
+
+      @direct_gems = direct_gems.uniq
+    end
+
+    # Check if a gem is a direct dependency
+    def is_direct_gem?(gem_name)
+      parse_gemfile.include?(gem_name)
+    end
+
+    # Parse package.json to get direct dependencies
+    def parse_package_json
+      return @direct_packages if @direct_packages
+
+      package_json_path = File.join(@project_path, 'package.json')
+      return [] unless File.exist?(package_json_path)
+
+      begin
+        content = File.read(package_json_path)
+        data = JSON.parse(content)
+
+        # Get dependencies from dependencies, devDependencies, peerDependencies, optionalDependencies
+        direct_packages = []
+        %w[dependencies devDependencies peerDependencies optionalDependencies].each do |key|
+          direct_packages.concat(data[key].keys) if data[key].is_a?(Hash)
+        end
+
+        @direct_packages = direct_packages.uniq
+      rescue JSON::ParserError, Errno::ENOENT
+        @direct_packages = []
+      end
+    end
+
+    # Check if a package is a direct dependency
+    def is_direct_package?(package_name)
+      parse_package_json.include?(package_name)
+    end
+
     # Prompt user to choose between npm and yarn when both are available
     def prompt_package_manager_choice
       puts "\n  Both npm and yarn are available. Which would you like to use?"
       print "  Enter 'n' for npm or 'y' for yarn (default: npm): "
-      
+
       choice = $stdin.gets.chomp.strip.downcase
-      
+
       if choice.empty? || choice == 'n' || choice == 'npm'
         'npm'
-      elsif choice == 'y' || choice == 'yarn'
+      elsif %w[y yarn].include?(choice)
         'yarn'
       else
-        puts "  ⚠️  Invalid choice. Using npm as default."
+        puts '  ⚠️  Invalid choice. Using npm as default.'
         'npm'
       end
     end
@@ -604,7 +662,7 @@ module Rubion
       # Set timeout to avoid hanging
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Skip SSL verification
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE # Skip SSL verification
       http.open_timeout = 2
       http.read_timeout = 3
 
@@ -614,31 +672,28 @@ module Rubion
       return { versions: {}, version_list: [] } unless response.is_a?(Net::HTTPSuccess)
 
       data = JSON.parse(response.body)
-      
+
       return { versions: {}, version_list: [] } unless data['time'] && data['versions']
-      
+
       # Build hash of version => date and sorted version list
       version_dates = {}
       version_times = data['time'].select { |k, v| k != 'created' && k != 'modified' && data['versions'][k] }
-      
+
       # Sort versions by release date
       sorted_versions = version_times.sort_by { |k, v| DateTime.parse(v) }.map(&:first)
-      
+
       # Build date hash
       version_times.each do |version, date_str|
-        begin
-          date = DateTime.parse(date_str)
-          version_dates[version] = date.strftime('%-m/%-d/%Y')
-        rescue
-          version_dates[version] = 'N/A'
-        end
+        date = DateTime.parse(date_str)
+        version_dates[version] = date.strftime('%-m/%-d/%Y')
+      rescue StandardError
+        version_dates[version] = 'N/A'
       end
-      
+
       { versions: version_dates, version_list: sorted_versions }
-    rescue => e
+    rescue StandardError => e
       puts "  Debug: Error fetching versions for #{package_name}: #{e.message}" if ENV['DEBUG']
       { versions: {}, version_list: [] }
     end
   end
 end
-

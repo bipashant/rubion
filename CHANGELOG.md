@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2025-01-14
+
+### Added
+- Highlight direct dependencies with ✅ prefix in version tables
+- Automatic detection of direct gems from Gemfile
+- Automatic detection of direct packages from package.json (dependencies, devDependencies, peerDependencies, optionalDependencies)
+- Direct dependencies are now visually distinguished from transitive dependencies
+
+### Changed
+- Package manager prompt now accepts 'y' for yarn and 'n' for npm (still supports full words)
+- Improved code style and formatting
+
 ## [0.3.3] - 2025-01-14
 
 ### Changed
@@ -146,7 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/yourusername/rubion/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/yourusername/rubion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/yourusername/rubion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/yourusername/rubion/compare/v0.3.0...v0.3.1
