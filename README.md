@@ -1,7 +1,8 @@
 #  Rubion
-<img width="1237" height="671" alt="Screenshot 2025-11-14 at 10 48 12 am" src="https://github.com/user-attachments/assets/a3d93452-c442-416a-9697-de59746e16ad" />
 
 **Rubion** is a security and version scanner for Ruby and JavaScript projects. It helps you identify vulnerabilities and outdated dependencies in your Ruby gems and NPM packages.
+
+<img width="1237" height="671" alt="Screenshot 2025-11-14 at 10 48 12 am" src="https://github.com/user-attachments/assets/a3d93452-c442-416a-9697-de59746e16ad" />
 
 ## Features
 
