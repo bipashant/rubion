@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.11] - 2025-01-14
+
+### Changed
+- Enhanced README with comprehensive examples and production-ready documentation
+- Updated RubyGems description with complete usage examples and output samples
+- Added more detailed table examples showing multiple vulnerabilities and packages
+- Improved documentation with direct dependencies filtering example
+
 ## [0.3.10] - 2025-01-14
 
 ### Changed
@@ -207,7 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/yourusername/rubion/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/yourusername/rubion/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/yourusername/rubion/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/yourusername/rubion/compare/v0.3.7...v0.3.8
