@@ -187,6 +187,9 @@ Package Versions:
 | typescript        | 4.7.0  | 5/24/2022                 | 5.1.0   | 5/25/2023                | 1 year           | 12                |
 +------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
 ```
+![aaaScreenshot 2025-11-15 at 2 54 24 pm](https://github.com/user-attachments/assets/9ce27e07-9c95-44ea-a96c-ec9537234d06)
+<img width="1333" height="741" alt="Screenshot 2025-11-15 at 2 54 34 pm" src="https://github.com/user-attachments/assets/22759b64-776f-4c9d-9bbb-3b70adead02e" />
+
 
 ### Direct Dependencies Only (with --exclude-dependencies)
 
