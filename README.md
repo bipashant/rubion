@@ -131,7 +131,6 @@ rubion -v
 ## Output Example
 
 ### Complete Scan Output
-
 ```
 🔍 Scanning project at: /path/to/project
 
@@ -139,53 +138,53 @@ rubion -v
 
 Gem Vulnerabilities:
 
-+----------+--------+---------+------------------------------------------+
-| Level    | Name   | Version | Vulnerability                            |
-+----------+--------+---------+------------------------------------------+
-| 🔴 Critical | rexml | 3.4.1   | REXML has DoS condition when parsing... |
-| 🟠 High  | rack   | 2.0.8   | Denial of Service vulnerability         |
-| 🟡 Medium | nokogiri | 1.13.8 | XML parsing vulnerability              |
-| 🟢 Low   | json   | 2.6.1   | JSON parsing issue                      |
-+----------+--------+---------+------------------------------------------+
++--------------+----------+---------+---------------------------------------------+
+| Level        | Name     | Version | Vulnerability                               |
++--------------+----------+---------+---------------------------------------------+
+| 🔴 Critical  | rexml    | 3.4.1   | REXML has DoS condition when parsing...     |
+| 🟠 High      | rack     | 2.0.8   | Denial of Service vulnerability             |
+| 🟡 Medium    | nokogiri | 1.13.8  | XML parsing vulnerability                   |
+| 🟢 Low       | json     | 2.6.1   | JSON parsing issue                          |
++--------------+----------+---------+---------------------------------------------+
 
 Gem Versions:
 
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
-| Name             | Current | Current version released on | Latest  | Latest version released on | Behind By(Time) ↓ | Behind By(Versions) |
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
-| sidekiq          | 7.30    | 3/5/2024                 | 8.1     | 11/11/2025               | 1 year           | 15                |
-| rails             | 7.0.0   | 12/15/2022               | 7.1.0   | 10/4/2024                | 1 year 10 months | 8                 |
-| fastimage         | 2.2.7   | 2/2/2025                  | 2.3.2   | 9/9/2025                 | 7 months         | 3                 |
-| nokogiri          | 1.13.8 | 5/10/2023                 | 1.15.0  | 8/20/2024                | 1 year 3 months  | 12                |
-| redis             | 4.8.0  | 1/15/2023                 | 5.0.0   | 11/1/2024                | 1 year 9 months  | 20                |
-| pg                | 1.4.0  | 3/20/2023                 | 1.5.0   | 9/15/2024                | 1 year 5 months  | 6                 |
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
+| Name             | Current | Current Released On           | Latest  | Latest Released On            | Behind By(Time)     | Behind By(Versions)   |
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
+| sidekiq          | 7.30    | 3/5/2024                      | 8.1     | 11/11/2025                    | 1 year              | 15                    |
+| rails            | 7.0.0   | 12/15/2022                    | 7.1.0   | 10/4/2024                     | 1 year 10 months    | 8                     |
+| fastimage        | 2.2.7   | 2/2/2025                      | 2.3.2   | 9/9/2025                      | 7 months            | 3                     |
+| nokogiri         | 1.13.8  | 5/10/2023                     | 1.15.0  | 8/20/2024                     | 1 year 3 months     | 12                    |
+| redis            | 4.8.0   | 1/15/2023                     | 5.0.0   | 11/1/2024                     | 1 year 9 months     | 20                    |
+| pg               | 1.4.0   | 3/20/2023                     | 1.5.0   | 9/15/2024                     | 1 year 5 months     | 6                     |
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
 
 📦 Checking NPM packages... 45/45 ✓
 
 Package Vulnerabilities:
 
-+----------+--------+---------+------------------------------------------+
-| Level    | Name   | Version | Vulnerability                            |
-+----------+--------+---------+------------------------------------------+
-| 🔴 Critical | lodash | 4.17.20 | Prototype pollution vulnerability    |
-| 🟠 High  | moment | 2.29.1  | Wrong timezone date calculation         |
-| 🟡 Medium | axios  | 0.21.1  | Server-Side Request Forgery (SSRF)      |
-| 🟢 Low   | debug  | 4.3.1   | Regular Expression Denial of Service   |
-+----------+--------+---------+------------------------------------------+
++--------------+---------+---------+-----------------------------------------------+
+| Level        | Name    | Version | Vulnerability                                 |
++--------------+---------+---------+-----------------------------------------------+
+| 🔴 Critical  | lodash  | 4.17.20 | Prototype pollution vulnerability              |
+| 🟠 High      | moment  | 2.29.1  | Wrong timezone date calculation                |
+| 🟡 Medium    | axios   | 0.21.1  | Server-Side Request Forgery (SSRF)             |
+| 🟢 Low       | debug   | 4.3.1   | Regular Expression Denial of Service           |
++--------------+---------+---------+-----------------------------------------------+
 
 Package Versions:
 
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
-| Name             | Current | Current version released on | Latest  | Latest version released on | Behind By(Time) ↓ | Behind By(Versions) |
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
-| react             | 17.0.2 | 3/3/2021                  | 18.2.0  | 6/14/2023                | 2 years 3 months | 45                |
-| vue               | 3.2.0  | 8/5/2021                  | 3.3.0   | 5/18/2023                | 1 year 9 months  | 8                 |
-| jquery            | 3.7.1  | 4/5/2024                  | 3.9.1   | 10/11/2025               | 1 year           | 8                 |
-| express           | 4.18.0 | 4/25/2022                 | 4.18.2  | 8/15/2023                | 1 year 3 months  | 2                 |
-| webpack           | 5.70.0 | 3/1/2022                  | 5.88.0  | 6/1/2023                 | 1 year 3 months  | 18                |
-| typescript        | 4.7.0  | 5/24/2022                 | 5.1.0   | 5/25/2023                | 1 year           | 12                |
-+------------------+---------+--------------------------+---------+--------------------------+------------------+-------------------+
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
+| Name             | Current | Current Released On           | Latest  | Latest Released On            | Behind By(Time)     | Behind By(Versions)   |
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
+| react            | 17.0.2  | 3/3/2021                      | 18.2.0  | 6/14/2023                     | 2 years 3 months    | 45                    |
+| vue              | 3.2.0   | 8/5/2021                      | 3.3.0   | 5/18/2023                     | 1 year 9 months     | 8                     |
+| jquery           | 3.7.1   | 4/5/2024                      | 3.9.1   | 10/11/2025                    | 1 year              | 8                     |
+| express          | 4.18.0  | 4/25/2022                     | 4.18.2  | 8/15/2023                     | 1 year 3 months     | 2                     |
+| webpack          | 5.70.0  | 3/1/2022                      | 5.88.0  | 6/1/2023                      | 1 year 3 months     | 18                    |
+| typescript       | 4.7.0   | 5/24/2022                     | 5.1.0   | 5/25/2023                     | 1 year              | 12                    |
++------------------+---------+-------------------------------+---------+-------------------------------+---------------------+-----------------------+
 ```
 ![aaaScreenshot 2025-11-15 at 2 54 24 pm](https://github.com/user-attachments/assets/9ce27e07-9c95-44ea-a96c-ec9537234d06)
 <img width="1333" height="741" alt="Screenshot 2025-11-15 at 2 54 34 pm" src="https://github.com/user-attachments/assets/22759b64-776f-4c9d-9bbb-3b70adead02e" />
@@ -346,9 +345,6 @@ Future features planned:
 - [ ] Export formats (JSON, CSV, HTML)
 - [ ] Summary statistics
 - [ ] Update command suggestions
-- [ ] Support for Python (pip) packages
-- [ ] Support for PHP (composer) packages
-- [ ] Support for Go modules
 - [ ] CI/CD integration flags
 - [ ] Configurable severity thresholds
 - [ ] Auto-fix suggestions
