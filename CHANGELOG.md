@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.13] - 2025-01-14
+
+### Fixed
+- **CRITICAL**: Removed silent error suppression that was hiding command failures
+- Errors from bundle-audit, bundle outdated, npm/yarn audit, and npm/yarn outdated are now properly raised
+- No longer shows false "No vulnerabilities found!" when commands fail
+- Commands that fail to execute or return unexpected exit codes now raise exceptions with clear error messages
+- JSON parsing errors are now raised instead of silently ignored
+
 ## [0.3.12] - 2025-01-14
 
 ### Changed
@@ -221,7 +230,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.12...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.13...HEAD
+[0.3.13]: https://github.com/yourusername/rubion/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/yourusername/rubion/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/yourusername/rubion/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/yourusername/rubion/compare/v0.3.9...v0.3.10
