@@ -102,30 +102,37 @@ module Rubion
       stdout, stderr, status = Open3.capture3('bundle-audit check 2>&1', chdir: @project_path)
 
       # bundle-audit returns exit code 1 when vulnerabilities are found, 0 when none found
-      # Always parse if there's output (vulnerabilities found) or if it succeeded (no vulnerabilities)
-      if stdout.include?('vulnerabilities found') || stdout.include?('Name:') || status.success?
+      # Exit code 1 is expected when vulnerabilities exist, so we still parse the output
+      # Exit code 0 means no vulnerabilities found
+      # Any other exit code or error means the command failed
+      if status.exitstatus == 1 || status.success?
+        # Exit code 1 (vulnerabilities found) or 0 (no vulnerabilities) - parse output
         parse_bundler_audit_output(stdout)
+      elsif !stdout.empty? && (stdout.include?('vulnerabilities found') || stdout.include?('Name:'))
+        # Try to parse if output looks valid even if exit code is unexpected
+        parse_bundler_audit_output(stdout)
+      elsif status.exitstatus.nil?
+        # Command not found or failed to execute
+        raise "bundle-audit command failed or is not installed. Error: #{stderr}"
       else
-        # No vulnerabilities found or bundler-audit not available
-        @result.gem_vulnerabilities = []
+        # Unexpected exit code
+        raise "bundle-audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
       end
-    rescue StandardError => e
-      puts "  ⚠️  Could not run bundle-audit (#{e.message}). Skipping gem vulnerability check."
-      @result.gem_vulnerabilities = []
     end
 
     def check_gem_versions
       stdout, stderr, status = Open3.capture3('bundle outdated --parseable', chdir: @project_path)
 
-      if status.success? || !stdout.empty?
+      if status.success?
+        # Command succeeded - parse output (may be empty if all gems are up to date)
         parse_bundle_outdated_output(stdout)
+      elsif status.exitstatus.nil?
+        # Command not found or failed to execute
+        raise "bundle outdated command failed or is not available. Error: #{stderr}"
       else
-        # No outdated gems found
-        @result.gem_versions = []
+        # Command failed with non-zero exit code
+        raise "bundle outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
       end
-    rescue StandardError => e
-      puts "  ⚠️  Could not run bundle outdated (#{e.message}). Skipping gem version check."
-      @result.gem_versions = []
     end
 
     def check_npm_vulnerabilities
@@ -134,15 +141,20 @@ module Rubion
       command = "#{@package_manager} audit --json 2>&1"
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
 
+      if status.exitstatus.nil?
+        # Command not found or failed to execute
+        raise "#{@package_manager} audit command failed or is not available. Error: #{stderr}"
+      elsif !status.success? && status.exitstatus != 1
+        # Exit code 1 is expected when vulnerabilities are found, other non-zero codes are errors
+        raise "#{@package_manager} audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+      end
+
       begin
         data = JSON.parse(stdout)
         parse_npm_audit_output(data)
-      rescue JSON::ParserError
-        @result.package_vulnerabilities = []
+      rescue JSON::ParserError => e
+        raise "Failed to parse #{@package_manager} audit JSON output: #{e.message}. Raw output: #{stdout}"
       end
-    rescue StandardError => e
-      puts "  ⚠️  Could not run #{@package_manager} audit (#{e.message}). Skipping package vulnerability check."
-      @result.package_vulnerabilities = []
     end
 
     def check_npm_versions
@@ -160,16 +172,20 @@ module Rubion
       command = 'npm outdated --json 2>&1'
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
 
+      if status.exitstatus.nil?
+        # Command not found or failed to execute
+        raise "npm outdated command failed or is not available. Error: #{stderr}"
+      elsif !status.success? && status.exitstatus != 1
+        # Exit code 1 is expected when packages are outdated, other non-zero codes are errors
+        raise "npm outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+      end
+
       begin
         data = JSON.parse(stdout) unless stdout.empty?
         parse_npm_outdated_output(data || {})
       rescue JSON::ParserError => e
-        puts "  ⚠️  Error parsing npm outdated JSON output: #{e.message}"
-        @result.package_versions = []
+        raise "Failed to parse npm outdated JSON output: #{e.message}. Raw output: #{stdout}"
       end
-    rescue StandardError => e
-      puts "  ⚠️  Could not run npm outdated (#{e.message}). Skipping package version check."
-      @result.package_versions = []
     end
 
     def check_yarn_outdated
@@ -177,15 +193,19 @@ module Rubion
       command = 'yarn outdated 2>&1'
       stdout, stderr, status = Open3.capture3(command, chdir: @project_path)
 
+      if status.exitstatus.nil?
+        # Command not found or failed to execute
+        raise "yarn outdated command failed or is not available. Error: #{stderr}"
+      elsif !status.success? && status.exitstatus != 1
+        # Exit code 1 is expected when packages are outdated, other non-zero codes are errors
+        raise "yarn outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+      end
+
       begin
         parse_yarn_outdated_output(stdout)
       rescue StandardError => e
-        puts "  ⚠️  Could not parse yarn outdated output (#{e.message}). Skipping package version check."
-        @result.package_versions = []
+        raise "Failed to parse yarn outdated output: #{e.message}. Raw output: #{stdout}"
       end
-    rescue StandardError => e
-      puts "  ⚠️  Could not run yarn outdated (#{e.message}). Skipping package version check."
-      @result.package_versions = []
     end
 
     # Parsers
@@ -332,9 +352,6 @@ module Rubion
       end
 
       @result.package_vulnerabilities = vulnerabilities
-    rescue StandardError => e
-      puts "  ⚠️  Error parsing npm audit data: #{e.message}"
-      @result.package_vulnerabilities = []
     end
 
     def parse_npm_outdated_output(data)
@@ -416,9 +433,6 @@ module Rubion
       end
 
       @result.package_versions = versions
-    rescue StandardError => e
-      puts "  ⚠️  Error parsing npm outdated data: #{e.message}"
-      @result.package_versions = []
     end
 
     def parse_yarn_outdated_output(output)
