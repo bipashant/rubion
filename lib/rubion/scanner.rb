@@ -105,18 +105,38 @@ module Rubion
       # Exit code 1 is expected when vulnerabilities exist, so we still parse the output
       # Exit code 0 means no vulnerabilities found
       # Any other exit code or error means the command failed
-      if status.exitstatus == 1 || status.success?
+      if status.exitstatus.nil? || status.exitstatus == 127 || stderr.include?('command not found') || stdout.include?('command not found')
+        # Command not found - try to install bundler-audit automatically
+        install_bundler_audit_and_retry
+      elsif status.exitstatus == 1 || status.success? || (!stdout.empty? && (stdout.include?('vulnerabilities found') || stdout.include?('Name:')))
         # Exit code 1 (vulnerabilities found) or 0 (no vulnerabilities) - parse output
+        # Also try to parse if output looks valid even if exit code is unexpected
         parse_bundler_audit_output(stdout)
-      elsif !stdout.empty? && (stdout.include?('vulnerabilities found') || stdout.include?('Name:'))
-        # Try to parse if output looks valid even if exit code is unexpected
-        parse_bundler_audit_output(stdout)
-      elsif status.exitstatus.nil?
-        # Command not found or failed to execute
-        raise "bundle-audit command failed or is not installed. Error: #{stderr}"
       else
         # Unexpected exit code
-        raise "bundle-audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+        raise "bundle-audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
+                                                                                             "\nError: #{stderr}"
+                                                                                           end}"
+      end
+    end
+
+    def install_bundler_audit_and_retry
+      puts "\n  ⚠️  bundle-audit is not installed."
+      print '  Attempting to install bundler-audit... '
+      $stdout.flush
+
+      _install_stdout, install_stderr, install_status = Open3.capture3('gem install bundler-audit 2>&1')
+
+      if install_status.success?
+        puts "✓ Successfully installed bundler-audit\n"
+        puts "  Retrying gem vulnerability check...\n\n"
+        # Retry the check after installation
+        check_gem_vulnerabilities
+      else
+        puts '✗ Failed to install bundler-audit'
+        raise "bundle-audit is not installed and automatic installation failed.\n" \
+              "Please install it manually by running: gem install bundler-audit\n" \
+              "Installation error: #{install_stderr}"
       end
     end
 
@@ -131,7 +151,9 @@ module Rubion
         raise "bundle outdated command failed or is not available. Error: #{stderr}"
       else
         # Command failed with non-zero exit code
-        raise "bundle outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+        raise "bundle outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
+                                                                                                "\nError: #{stderr}"
+                                                                                              end}"
       end
     end
 
@@ -146,7 +168,9 @@ module Rubion
         raise "#{@package_manager} audit command failed or is not available. Error: #{stderr}"
       elsif !status.success? && status.exitstatus != 1
         # Exit code 1 is expected when vulnerabilities are found, other non-zero codes are errors
-        raise "#{@package_manager} audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+        raise "#{@package_manager} audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
+                                                                                                          "\nError: #{stderr}"
+                                                                                                        end}"
       end
 
       begin
@@ -177,7 +201,9 @@ module Rubion
         raise "npm outdated command failed or is not available. Error: #{stderr}"
       elsif !status.success? && status.exitstatus != 1
         # Exit code 1 is expected when packages are outdated, other non-zero codes are errors
-        raise "npm outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+        raise "npm outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
+                                                                                             "\nError: #{stderr}"
+                                                                                           end}"
       end
 
       begin
@@ -198,7 +224,9 @@ module Rubion
         raise "yarn outdated command failed or is not available. Error: #{stderr}"
       elsif !status.success? && status.exitstatus != 1
         # Exit code 1 is expected when packages are outdated, other non-zero codes are errors
-        raise "yarn outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{stderr.empty? ? '' : "\nError: #{stderr}"}"
+        raise "yarn outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
+                                                                                              "\nError: #{stderr}"
+                                                                                            end}"
       end
 
       begin
