@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.17] - 2025-01-14
+
+### Fixed
+- Fixed `bundle outdated` exit code 1 handling - now correctly treats exit code 1 as success when outdated gems are found
+- Fixed stdin handling when running through `bundle exec` - now defaults to npm when stdin is not available
+- Fixed yarn audit exit code 4 handling - now correctly treats exit code 4 as success when vulnerabilities are found
+- Added proper parsing for yarn audit's line-by-line JSON output format
+- Yarn audit vulnerabilities are now properly extracted and displayed
+
 ## [0.3.16] - 2025-01-14
 
 ### Changed
@@ -250,7 +259,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.16...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.17...HEAD
+[0.3.17]: https://github.com/yourusername/rubion/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/yourusername/rubion/compare/v0.3.15...v0.3.16
 [0.3.15]: https://github.com/yourusername/rubion/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/yourusername/rubion/compare/v0.3.13...v0.3.14

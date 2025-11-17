@@ -125,14 +125,17 @@ module Rubion
     def check_gem_versions
       stdout, stderr, status = Open3.capture3('bundle outdated --parseable', chdir: @project_path)
 
-      if status.success?
-        # Command succeeded - parse output (may be empty if all gems are up to date)
+      # bundle outdated returns exit code 1 when outdated gems are found (expected behavior)
+      # Exit code 0 means no outdated gems or command succeeded
+      # Exit code 1 means outdated gems found - this is success, not an error
+      if status.success? || status.exitstatus == 1
+        # Command succeeded or outdated gems found - parse output
         parse_bundle_outdated_output(stdout)
       elsif status.exitstatus.nil?
         # Command not found or failed to execute
         raise "bundle outdated command failed or is not available. Error: #{stderr}"
       else
-        # Command failed with non-zero exit code
+        # Command failed with unexpected non-zero exit code
         raise "bundle outdated failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
                                                                                                 "\nError: #{stderr}"
                                                                                               end}"
@@ -148,16 +151,22 @@ module Rubion
       if status.exitstatus.nil?
         # Command not found or failed to execute
         raise "#{@package_manager} audit command failed or is not available. Error: #{stderr}"
-      elsif !status.success? && status.exitstatus != 1
-        # Exit code 1 is expected when vulnerabilities are found, other non-zero codes are errors
+      elsif !status.success? && status.exitstatus != 1 && status.exitstatus != 4
+        # Exit code 1 (npm) or 4 (yarn) is expected when vulnerabilities are found
+        # Other non-zero codes are errors
         raise "#{@package_manager} audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
                                                                                                           "\nError: #{stderr}"
                                                                                                         end}"
       end
 
       begin
-        data = JSON.parse(stdout)
-        parse_npm_audit_output(data)
+        # Yarn audit outputs JSON line by line, need to parse each line
+        if @package_manager == 'yarn'
+          parse_yarn_audit_output(stdout)
+        else
+          data = JSON.parse(stdout)
+          parse_npm_audit_output(data)
+        end
       rescue JSON::ParserError => e
         raise "Failed to parse #{@package_manager} audit JSON output: #{e.message}. Raw output: #{stdout}"
       end
@@ -358,6 +367,55 @@ module Rubion
             severity: info['severity'] || 'unknown',
             title: title
           }
+        end
+      end
+
+      @result.package_vulnerabilities = vulnerabilities
+    end
+
+    def parse_yarn_audit_output(output)
+      vulnerabilities = []
+      seen_advisories = {}
+
+      # Yarn audit outputs JSON line by line
+      output.each_line do |line|
+        next if line.strip.empty?
+
+        begin
+          json_obj = JSON.parse(line)
+          next unless json_obj.is_a?(Hash)
+
+          # Parse auditAdvisory type
+          if json_obj['type'] == 'auditAdvisory' && json_obj['data'] && json_obj['data']['advisory']
+            advisory = json_obj['data']['advisory']
+            advisory_id = advisory['id']
+
+            # Skip if we've already seen this advisory
+            next if seen_advisories[advisory_id]
+
+            seen_advisories[advisory_id] = true
+
+            # Extract package name and version from findings
+            if advisory['findings'] && advisory['findings'].is_a?(Array) && advisory['findings'].first
+              finding = advisory['findings'].first
+              version = finding['version'] || 'unknown'
+            else
+              version = 'unknown'
+            end
+
+            # Get severity (yarn uses lowercase)
+            severity = (advisory['severity'] || 'unknown').downcase
+
+            vulnerabilities << {
+              package: advisory['module_name'] || 'unknown',
+              version: version,
+              severity: severity,
+              title: advisory['title'] || advisory['overview'] || 'Vulnerability detected'
+            }
+          end
+        rescue JSON::ParserError
+          # Skip invalid JSON lines
+          next
         end
       end
 
@@ -789,7 +847,14 @@ module Rubion
       puts "\n  Both npm and yarn are available. Which would you like to use?"
       print "  Enter 'n' for npm or 'y' for yarn (default: npm): "
 
-      choice = $stdin.gets.chomp.strip.downcase
+      input = $stdin.gets
+      if input.nil?
+        # stdin not available (e.g., running through bundle exec in non-interactive mode)
+        puts "  (stdin not available, using npm as default)\n"
+        return 'npm'
+      end
+
+      choice = input.chomp.strip.downcase
 
       if choice.empty? || choice == 'n' || choice == 'npm'
         'npm'
