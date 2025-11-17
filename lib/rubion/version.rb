@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 module Rubion
-  VERSION = "0.3.13"
+  VERSION = "0.3.14"
 end
 

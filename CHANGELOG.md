@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.14] - 2025-01-14
+
+### Added
+- Automatic installation of bundler-audit when it's not found
+- When bundle-audit command is missing, rubion now automatically attempts to install it using `gem install bundler-audit`
+- After successful installation, the scan automatically retries without requiring user intervention
+- Clear error messages if automatic installation fails, with instructions for manual installation
+
 ## [0.3.13] - 2025-01-14
 
 ### Fixed
@@ -230,7 +238,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.13...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/yourusername/rubion/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/yourusername/rubion/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/yourusername/rubion/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/yourusername/rubion/compare/v0.3.10...v0.3.11
