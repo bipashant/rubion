@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.15] - 2025-01-14
+
+### Changed
+- Updated README.md with improved documentation and examples
+
 ## [0.3.14] - 2025-01-14
 
 ### Added
@@ -238,7 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.14...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.15...HEAD
+[0.3.15]: https://github.com/yourusername/rubion/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/yourusername/rubion/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/yourusername/rubion/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/yourusername/rubion/compare/v0.3.11...v0.3.12
