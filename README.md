@@ -12,6 +12,7 @@
 - 📦 **Package Versions**: Identifies outdated NPM/JavaScript packages with release dates and version counts
 - 🎯 **Direct Dependencies**: Highlights direct dependencies (from `Gemfile`/`package.json`) in bold text
 - 🔍 **Filtering**: Option to show only direct dependencies with `--exclude-dependencies` flag
+- 🛡️ **Vulnerabilities Only Mode**: Option to show only vulnerability tables (and skip version/outdated checks) with `--vulnerabilities-only`
 - 📊 **Sorting**: Sort results by any column (Name, Current, Date, Latest, Behind By(Time), Behind By(Versions))
 - 📊 **Beautiful Reports**: Organized table output with severity icons (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low, ⚪ Unknown)
 - 🚀 **Fast & Efficient**: Parallel API processing (10 concurrent threads) for quick results
@@ -111,6 +112,17 @@ rubion scan --exclude-dependencies
 ```
 
 Direct dependencies are automatically highlighted in **bold text** in the output.
+
+### Vulnerabilities-Only Mode
+
+```bash
+# Show only vulnerability tables (no version/outdated sections)
+rubion scan --vulnerabilities-only
+
+# Combine with other filters
+rubion scan --gems-only --vulnerabilities-only
+rubion scan --packages-only --vulnerabilities-only
+```
 
 ### View Help
 
