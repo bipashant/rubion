@@ -29,7 +29,14 @@ module Rubion
 
     def self.parse_scan_options(args)
       # Default to sorting by "Behind By(Time)" in descending order
-      options = { gems: true, packages: true, sort_by: 'Behind By(Time)', sort_desc: true, exclude_dependencies: false }
+      options = {
+        gems: true,
+        packages: true,
+        sort_by: 'Behind By(Time)',
+        sort_desc: true,
+        exclude_dependencies: false,
+        vulnerabilities_only: false
+      }
 
       # Check for --gems-only or --packages-only flags
       if args.include?('--gems-only') || args.include?('-g')
@@ -58,6 +65,9 @@ module Rubion
       # Parse --exclude-dependencies flag
       options[:exclude_dependencies] = true if args.include?('--exclude-dependencies')
 
+      # Parse --vulnerabilities-only flag
+      options[:vulnerabilities_only] = true if args.include?('--vulnerabilities-only') || args.include?('--vulns-only')
+
       options
     end
 
@@ -65,7 +75,7 @@ module Rubion
                               exclude_dependencies: false })
       project_path = Dir.pwd
 
-      scanner = Scanner.new(project_path: project_path)
+      scanner = Scanner.new(project_path: project_path, vulnerabilities_only: options[:vulnerabilities_only])
       result = scanner.scan_incremental(options)
 
       # Results are already printed incrementally based on options
@@ -78,7 +88,7 @@ module Rubion
       reporter = Reporter.new(result, sort_by: options[:sort_by], sort_desc: options[:sort_desc],
                                       exclude_dependencies: options[:exclude_dependencies])
       reporter.print_package_vulnerabilities
-      reporter.print_package_versions
+      reporter.print_package_versions unless options[:vulnerabilities_only]
     end
 
     def self.print_help
@@ -92,14 +102,15 @@ module Rubion
           rubion help                 Display this help message
 
         SCAN OPTIONS:
-          --gems, --gem, -g           Scan only Ruby gems (skip NPM packages)
-          --packages, --npm, -p       Scan only NPM packages (skip Ruby gems)
-          --all, -a                   Scan both gems and packages (default)
-          --sort-by COLUMN, -s COLUMN Sort results by column (Name, Current, Date, Latest, Behind By(Time), Behind By(Versions))
-                                     (default: "Behind By(Time)" in descending order)
-          --asc, --ascending          Sort in ascending order (use with --sort-by)
-          --desc, --descending        Sort in descending order (use with --sort-by, default)
-          --exclude-dependencies      Show only direct dependencies (from Gemfile/package.json)
+          --gems, --gem, -g               Scan only Ruby gems (skip NPM packages)
+          --packages, --npm, -p           Scan only NPM packages (skip Ruby gems)
+          --all, -a                       Scan both gems and packages (default)
+          --sort-by COLUMN, -s COLUMN     Sort results by column (Name, Current, Date, Latest, Behind By(Time), Behind By(Versions))
+                                         (default: "Behind By(Time)" in descending order)
+          --asc, --ascending              Sort in ascending order (use with --sort-by)
+          --desc, --descending            Sort in descending order (use with --sort-by, default)
+          --exclude-dependencies          Show only direct dependencies (from Gemfile/package.json)
+          --vulnerabilities-only          Show only vulnerability tables (hide version/outdated sections)
 
         DESCRIPTION:
           Rubion scans your project for:
@@ -142,6 +153,9 @@ module Rubion
         #{'  '}
           # Show only direct dependencies
           rubion scan --exclude-dependencies
+        #{'  '}
+          # Show only vulnerabilities (no version/outdated tables)
+          rubion scan --vulnerabilities-only
         #{'  '}
           # Get help
           rubion help

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.20] - 2025-01-14
+
+### Added
+- `--vulnerabilities-only` / `--vulns-only` flag to show only vulnerability tables and skip version/outdated checks and output
+
+## [0.3.19] - 2025-01-14
+
+### Fixed
+- Handle `npm audit` `ENOLOCK` error (missing `package-lock.json`) gracefully by showing an info message and skipping npm vulnerability scanning instead of raising
+
+## [0.3.18] - 2025-01-14
+
+### Fixed
+- Treat all non-zero `yarn audit` exit codes as vulnerability bitmasks (not hard failures), so scans no longer crash on codes like 12 and instead parse and report vulnerabilities correctly
+
 ## [0.3.17] - 2025-01-14
 
 ### Fixed
@@ -259,7 +274,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.17...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.20...HEAD
+[0.3.20]: https://github.com/yourusername/rubion/compare/v0.3.19...v0.3.20
+[0.3.19]: https://github.com/yourusername/rubion/compare/v0.3.18...v0.3.19
+[0.3.18]: https://github.com/yourusername/rubion/compare/v0.3.17...v0.3.18
 [0.3.17]: https://github.com/yourusername/rubion/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/yourusername/rubion/compare/v0.3.15...v0.3.16
 [0.3.15]: https://github.com/yourusername/rubion/compare/v0.3.14...v0.3.15

@@ -20,13 +20,14 @@ module Rubion
       end
     end
 
-    def initialize(project_path: Dir.pwd, package_manager: nil)
+    def initialize(project_path: Dir.pwd, package_manager: nil, vulnerabilities_only: false)
       @project_path = project_path
       @result = ScanResult.new
       @package_manager = package_manager
       @package_manager_detected = false
       @direct_gems = nil
       @direct_packages = nil
+      @vulnerabilities_only = vulnerabilities_only
     end
 
     def scan
@@ -51,7 +52,7 @@ module Rubion
         reporter = Reporter.new(@result, sort_by: options[:sort_by], sort_desc: options[:sort_desc],
                                          exclude_dependencies: options[:exclude_dependencies])
         reporter.print_gem_vulnerabilities
-        reporter.print_gem_versions
+        reporter.print_gem_versions unless options[:vulnerabilities_only]
       end
 
       # Then scan NPM packages (if enabled)
@@ -70,6 +71,9 @@ module Rubion
 
       # Check for vulnerabilities using bundler-audit
       check_gem_vulnerabilities
+
+      # Skip version/outdated checks when only vulnerabilities are requested
+      return if @vulnerabilities_only
 
       # Check for outdated versions using bundle outdated (will show progress)
       check_gem_versions
@@ -92,6 +96,9 @@ module Rubion
 
       # Check for vulnerabilities using package manager audit
       check_npm_vulnerabilities
+
+      # Skip version/outdated checks when only vulnerabilities are requested
+      return if @vulnerabilities_only
 
       # Check for outdated versions using package manager outdated (will show progress)
       check_npm_versions
@@ -151,12 +158,16 @@ module Rubion
       if status.exitstatus.nil?
         # Command not found or failed to execute
         raise "#{@package_manager} audit command failed or is not available. Error: #{stderr}"
-      elsif !status.success? && status.exitstatus != 1 && status.exitstatus != 4
-        # Exit code 1 (npm) or 4 (yarn) is expected when vulnerabilities are found
-        # Other non-zero codes are errors
+      elsif @package_manager == 'npm' && !status.success? && status.exitstatus != 1
+        # For npm, exit code 1 means vulnerabilities were found; any other non-zero code is an error
         raise "#{@package_manager} audit failed with exit code #{status.exitstatus}. Output: #{stdout}#{unless stderr.empty?
                                                                                                           "\nError: #{stderr}"
                                                                                                         end}"
+      elsif @package_manager == 'yarn' && !status.success?
+        # For Yarn (classic), any non-zero exit code is a bitmask of severities:
+        # 1=info, 2=low, 4=moderate, 8=high, 16=critical. The exit code is the sum of severities found.
+        # Non-zero here indicates vulnerabilities were found; we'll still try to parse the JSON output below.
+        # Do not raise here so that vulnerabilities are handled gracefully.
       end
 
       begin
@@ -168,6 +179,30 @@ module Rubion
           parse_npm_audit_output(data)
         end
       rescue JSON::ParserError => e
+        # npm audit can emit human-readable errors plus a JSON error object when there is
+        # no lockfile (ENOLOCK) or similar issues. Because we redirect stderr to stdout
+        # (2>&1), the mixed output may not be valid JSON.
+        if @package_manager == 'npm'
+          json_start = stdout.index('{')
+          json_end = stdout.rindex('}')
+
+          if json_start && json_end && json_end > json_start
+            json_str = stdout[json_start..json_end]
+
+            begin
+              error_data = JSON.parse(json_str)
+
+              if error_data.is_a?(Hash) && error_data.dig('error', 'code') == 'ENOLOCK'
+                puts "\n  ℹ️  npm audit requires a package-lock.json. Skipping npm vulnerability check.\n"
+                @result.package_vulnerabilities = []
+                return
+              end
+            rescue JSON::ParserError
+              # Fall through to the generic error below
+            end
+          end
+        end
+
         raise "Failed to parse #{@package_manager} audit JSON output: #{e.message}. Raw output: #{stdout}"
       end
     end
