@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.21] - 2025-01-14
+
+### Added
+- `--vulnerabilities-only` / `--vulns-only` flag to show only vulnerability tables and skip version/outdated checks and output
+
 ## [0.3.20] - 2025-01-14
 
 ### Added
@@ -274,7 +279,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Color-coded severity indicators (Critical, High, Medium, Low)
 - 🚀 Simple CLI with help command
 
-[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.20...HEAD
+[Unreleased]: https://github.com/yourusername/rubion/compare/v0.3.21...HEAD
+[0.3.21]: https://github.com/yourusername/rubion/compare/v0.3.20...v0.3.21
 [0.3.20]: https://github.com/yourusername/rubion/compare/v0.3.19...v0.3.20
 [0.3.19]: https://github.com/yourusername/rubion/compare/v0.3.18...v0.3.19
 [0.3.18]: https://github.com/yourusername/rubion/compare/v0.3.17...v0.3.18
